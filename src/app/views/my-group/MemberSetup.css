@@ -1,0 +1,13 @@
+.stepper {
+    display: flex;
+    align-items: center;
+}
+
+.stepper-button {
+    flex: 1;
+    height: 100%;
+}
+
+.stepper-input {
+    flex: 1;
+}

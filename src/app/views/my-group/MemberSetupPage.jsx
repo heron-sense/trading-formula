@@ -8,6 +8,7 @@ import StepLabel from "@mui/material/StepLabel";
 import Stepper from "@mui/material/Stepper";
 import Typography from "@mui/material/Typography";
 import React from "react";
+import './MemberSetup.css'; // 导入样式文件
 
 function getSteps() {
     return ["Fill in account information", "Role & Permission setup", "Create an ad"];
