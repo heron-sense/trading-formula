@@ -10,8 +10,10 @@ import {
   styled,
 } from "@mui/material";
 import {H4} from "app/components/Typography";
-import { useEffect, useState } from "react";
+import React,{ useEffect, useState } from "react";
 import { TextValidator, ValidatorForm } from "react-material-ui-form-validator";
+ import { useNavigate } from 'react-router-dom';
+import { Button, Container, Form, FormGroup, Input, Label} from 'reactstrap';
 
 const TextField = styled(TextValidator)(() => ({
   width: "100%",
@@ -30,10 +32,7 @@ const MemberSetup = () => {
     return () => ValidatorForm.removeValidationRule("isPasswordMatch");
   }, [state.password]);
 
-  const handleSubmit = (event) => {
-    // console.log("submitted");
-    // console.log(event);
-  };
+
 
   const handleChange = (event) => {
     event.persist();
@@ -53,6 +52,36 @@ const MemberSetup = () => {
     date,
     email,
   } = state;
+
+
+  const handleSubmit = async (event) => {
+    console.log(event);
+    event.preventDefault();
+    await fetch('http://localhost:5000/members/create', {
+    method: 'POST',
+        headers: {
+      'Accept': 'application/json',
+          'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({"user":"heron-sense"})
+  })
+.then(res => {
+    if (res.status === 200) {
+      //message.success('Login success.')
+      res.json().then(data =>{
+        localStorage.setItem('token',data.token)
+      })
+    }
+  })
+      .catch(err =>{
+        console.log(err)
+       // message.error('Login failed')
+      })
+  ;
+
+  //setUser(initialFormState);
+  //navigate(url);
+}
 
   return (
     <div>

@@ -14,7 +14,7 @@ export const navigations = [
     icon: 'group',
     children: [
       { name: '添加成员', icon: '',  iconText: 'SU', path: '/my-group/member/setup' },
-      { name: '客户信息模板', icon: '',  iconText: 'SU', path: '/settings/client-template' },
+      { name: '客户信息模板', icon: '',  iconText: 'SU', path: '/my-group/client-template' },
       { name: '角色权限', icon: '',  iconText: 'SU', path: '/settings/role/permission' },
       { name: 'Forgot Password', iconText: 'FP', path: '/session/forgot-password' },
     ]

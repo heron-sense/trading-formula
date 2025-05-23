@@ -4,7 +4,7 @@ import Loadable from 'app/components/Loadable';
 const SearchClientPage = Loadable(lazy(() => import('./client/SearchClientPage')));
 const AddClientPage = Loadable(lazy(() => import('./client/AddClientPage')));
 const MemberSetupPage = Loadable(lazy(() => import('./client/AddClientPage')));
-const UpdateClientInfoTemplate = Loadable(lazy(() => import('./settings/UpdateClientInfoTemplate')));
+const UpdateClientInfoTemplate = Loadable(lazy(() => import('../my-group/UpdateClientInfoTemplate')));
 const AppForm = Loadable(lazy(() => import('./forms/AppForm')));
 const AppButton = Loadable(lazy(() => import('./buttons/AppButton')));
 const AppIcon = Loadable(lazy(() => import('./icons/AppIcon')));
@@ -21,7 +21,7 @@ const AppExpansionPanel = Loadable(lazy(() => import('./expansion-panel/AppExpan
 
 const materialRoutes = [
   { path: '/client/list', element: <SearchClientPage /> },
-  { path: '/settings/client-template', element: <UpdateClientInfoTemplate/>},
+  { path: '/my-group/client-template', element: <UpdateClientInfoTemplate/>},
   { path: '/client/add', element: <AddClientPage /> },
   { path: '/material/form', element: <AppForm /> },
   { path: '/material/buttons', element: <AppButton /> },
