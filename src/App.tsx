@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { 
+import {
   Box, 
   AppBar, 
   Toolbar, 
   Typography, 
   IconButton,
-  Container,
   CssBaseline,
-  Fab,
   Tooltip
 } from '@mui/material';
 import { 
   Menu as MenuIcon, 
-  Visibility as ShowIcon,
   Logout
 } from '@mui/icons-material';
 import Sidebar from './components/Sidebar';
-import HomePage from './components/HomePage';
-import AboutPage from './components/AboutPage';
-import LoginPage from './components/LoginPage';
+import Footer from './components/Footer';
+import HomePage from './pages/dashboard/HomePage';
+import AboutPage from './pages/dashboard/AboutPage';
+import LoginPage from './pages/auth/LoginPage';
+import CustomerListPage from './pages/business/CustomerListPage';
+import DashboardOverview from './pages/dashboard/DashboardOverview';
+import ProductListPage from './pages/business/ProductListPage';
+import StockAnalysisPage from './pages/analytics/StockAnalysisPage';
 import { SidebarState } from './types';
 
 const drawerWidth: number = 280;
@@ -115,47 +117,134 @@ const App: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: isSidebarHidden ? 2 : 3,
           width: `calc(100% - ${getSidebarWidth()}px)`,
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           ml: `${getSidebarWidth()}px`,
           mt: 8, // 为顶部应用栏留出空间
           backgroundColor: '#f5f5f5',
-          minHeight: 'calc(100vh - 64px)'
+          minHeight: 'calc(100vh - 64px)',
+          overflow: 'auto'
         }}
       >
-        <Container maxWidth={isSidebarHidden ? false : 'xl'} sx={{ px: isSidebarHidden ? 0 : 2 }}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            {/* 可以在这里添加更多路由 */}
-          </Routes>
-        </Container>
+        <Routes>
+          <Route path="/" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64, // 顶部应用栏高度
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <HomePage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/about" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64, // 顶部应用栏高度
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <AboutPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/business/customers" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64, // 顶部应用栏高度
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <CustomerListPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/dashboard/overview" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <DashboardOverview />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/products" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <ProductListPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/analytics/stocks" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <StockAnalysisPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          {/* 可以在这里添加更多路由 */}
+        </Routes>
       </Box>
-
-      {/* 显示侧边栏的浮动按钮 - 仅在隐藏状态下显示 */}
-      {isSidebarHidden && (
-        <Fab
-          color="primary"
-          aria-label="show sidebar"
-          onClick={handleSidebarShow}
-          sx={{
-            position: 'fixed',
-            bottom: 24,
-            left: 24,
-            zIndex: (theme) => theme.zIndex.speedDial,
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'scale(1.1)'
-            }
-          }}
-        >
-          <Tooltip title="显示导航菜单" placement="right">
-            <ShowIcon />
-          </Tooltip>
-        </Fab>
-      )}
     </Box>
   );
 }

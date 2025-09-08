@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Drawer,
   List,
@@ -13,13 +14,10 @@ import {
 } from '@mui/material';
 import {
   Dashboard,
-  People,
-  Settings,
   Analytics,
   ExpandLess,
   ExpandMore,
-  Business,
-  Close
+  Business
 } from '@mui/icons-material';
 import { SidebarProps, MenuItem } from '../types';
 
@@ -27,6 +25,8 @@ const drawerWidth: number = 280;
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems: MenuItem[] = [
     {
@@ -35,25 +35,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       icon: <Dashboard />,
       path: '/',
       children: [
-        { id: 'overview', title: '概览', path: '/dashboard/overview' },
-        { id: 'reports', title: '报告', path: '/dashboard/reports' },
-        { id: 'analytics', title: '分析', path: '/dashboard/analytics' }
-      ]
-    },
-    {
-      id: 'users',
-      title: '用户管理',
-      icon: <People />,
-      path: '/users',
-      children: [
-        { id: 'user-list', title: '用户列表', path: '/users/list' },
-        { id: 'user-roles', title: '角色管理', path: '/users/roles' },
-        { id: 'permissions', title: '权限设置', path: '/users/permissions' }
+        { id: 'portfolio', title: 'Portfolio', path: '/analytics/stocks' }
       ]
     },
     {
       id: 'business',
-      title: '业务管理',
+      title: '客户配置',
       icon: <Business />,
       path: '/business',
       children: [
@@ -72,27 +59,24 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
         { id: 'performance', title: '性能分析', path: '/analytics/performance' },
         { id: 'trends', title: '趋势分析', path: '/analytics/trends' }
       ]
-    },
-    {
-      id: 'system',
-      title: '系统设置',
-      icon: <Settings />,
-      path: '/settings',
-      children: [
-        { id: 'general', title: '常规设置', path: '/settings/general' },
-        { id: 'security', title: '安全设置', path: '/settings/security' },
-        { id: 'notifications', title: '通知设置', path: '/settings/notifications' }
-      ]
     }
   ];
 
-  const singleItems: MenuItem[] = [];
+  // const singleItems: MenuItem[] = []; // 暂时不使用
 
   const handleExpandClick = (itemId: string): void => {
     setExpandedItems(prev => ({
       ...prev,
       [itemId]: !prev[itemId]
     }));
+  };
+
+  const handleMenuClick = (path: string): void => {
+    navigate(path);
+  };
+
+  const isActiveRoute = (path: string): boolean => {
+    return location.pathname === path;
   };
 
   const renderMenuItem = (item: MenuItem): React.ReactNode => {
@@ -103,13 +87,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       <React.Fragment key={item.id}>
         <ListItem disablePadding>
             <ListItemButton
-              onClick={hasChildren ? () => handleExpandClick(item.id) : undefined}
+              onClick={hasChildren ? () => handleExpandClick(item.id) : () => handleMenuClick(item.path)}
               sx={{
                 height: 48,
                 minHeight: 48,
                 justifyContent: 'initial',
                 px: 1.5,
                 transition: 'all 0.3s ease',
+                backgroundColor: isActiveRoute(item.path) ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
                 '&:hover': {
                   backgroundColor: 'rgba(25, 118, 210, 0.15)'
                 }
@@ -158,18 +143,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               {item.children?.map((child) => (
                 <ListItem key={child.id} disablePadding>
                   <ListItemButton
+                    onClick={() => handleMenuClick(child.path)}
                     sx={{
                       height: 40,
                       minHeight: 40,
-                      pl: 4,
+                      pl: 8,
                       transition: 'all 0.3s ease',
+                      backgroundColor: isActiveRoute(child.path) ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
                       '&:hover': {
                         backgroundColor: 'rgba(25, 118, 210, 0.12)'
                       },
                       '&:before': {
                         content: '""',
                         position: 'absolute',
-                        left: 16,
+                        left: 32, // 调整小圆点位置，与新的缩进保持一致
                         top: '50%',
                         transform: 'translateY(-50%)',
                         width: 4,
@@ -257,11 +244,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
         />
         
         {/* Logo和标题 - 左侧 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1, height: '100%' }}>
           <Box
             sx={{
-              width: 32,
-              height: 32,
+              width: 48,
+              height: '100%',
               borderRadius: '8px',
               background: 'rgba(255, 255, 255, 0.2)',
               display: 'flex',
@@ -269,10 +256,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               justifyContent: 'center',
               marginRight: 2,
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.3)'
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              minHeight: 48
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', fontSize: '1rem' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', fontSize: '1.2rem' }}>
               H
             </Typography>
           </Box>
@@ -303,21 +291,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             </Typography>
           </Box>
         </Box>
-
-        {/* 关闭按钮 - 右侧 */}
-        <IconButton 
-          onClick={onToggle}
-          sx={{
-            color: 'white',
-            zIndex: 1,
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              transform: 'scale(1.1)'
-            }
-          }}
-        >
-          <Close />
-        </IconButton>
       </Box>
 
       {/* 菜单列表 */}
