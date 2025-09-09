@@ -295,7 +295,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 sx={{
                   fontWeight: 600,
                   color: 'white',
-                  fontSize: '1.0rem',
+                  fontSize: '1.05rem',
                   letterSpacing: '0.1px',
                   lineHeight: 1.1,
                   whiteSpace: 'nowrap',
