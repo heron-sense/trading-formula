@@ -189,6 +189,7 @@ export interface Position {
   realizedGainLoss: number;
   totalGainLoss: number;
   totalGainLossPercent: number;
+  institutionalHoldingPercent: number; // 机构持仓占比
   purchaseDate: string;
   lastUpdated: string;
 }

@@ -321,6 +321,7 @@ export const generatePositions = (stocks: Stock[], count: number = 20): Position
     const realizedGainLoss = randomInt(-1000, 2000);
     const totalGainLoss = unrealizedGainLoss + realizedGainLoss;
     const totalGainLossPercent = (totalGainLoss / costBasis) * 100;
+    const institutionalHoldingPercent = Math.random() * 100; // 机构持仓占比 0-100%
     const purchaseDate = randomDate(new Date(2023, 0, 1), new Date());
     
     return {
@@ -337,6 +338,7 @@ export const generatePositions = (stocks: Stock[], count: number = 20): Position
       realizedGainLoss,
       totalGainLoss,
       totalGainLossPercent,
+      institutionalHoldingPercent,
       purchaseDate,
       lastUpdated: new Date().toISOString()
     };

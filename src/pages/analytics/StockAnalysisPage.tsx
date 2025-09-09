@@ -72,6 +72,8 @@ const StockAnalysisPage: React.FC = () => {
     maxPrice: '',
     minGainLoss: '',
     maxGainLoss: '',
+    minInstitutionalHolding: '',
+    maxInstitutionalHolding: '',
     sortBy: 'stockSymbol',
     sortOrder: 'asc' as 'asc' | 'desc'
   });
@@ -236,6 +238,10 @@ const StockAnalysisPage: React.FC = () => {
       // 盈亏筛选
       if (filters.minGainLoss && position.totalGainLoss < parseFloat(filters.minGainLoss)) return false;
       if (filters.maxGainLoss && position.totalGainLoss > parseFloat(filters.maxGainLoss)) return false;
+      
+      // 机构持仓占比筛选
+      if (filters.minInstitutionalHolding && position.institutionalHoldingPercent < parseFloat(filters.minInstitutionalHolding)) return false;
+      if (filters.maxInstitutionalHolding && position.institutionalHoldingPercent > parseFloat(filters.maxInstitutionalHolding)) return false;
       
       return true;
     });
@@ -468,6 +474,32 @@ const StockAnalysisPage: React.FC = () => {
               />
             </Box>
             
+            {/* 机构持仓占比范围 */}
+            <Box>
+              <TextField
+                fullWidth
+                label="最小机构持仓占比"
+                placeholder="%"
+                value={filters.minInstitutionalHolding}
+                onChange={(e) => handleFilterChange('minInstitutionalHolding', e.target.value)}
+                size="small"
+                type="number"
+                inputProps={{ min: 0, max: 100 }}
+              />
+            </Box>
+            <Box>
+              <TextField
+                fullWidth
+                label="最大机构持仓占比"
+                placeholder="%"
+                value={filters.maxInstitutionalHolding}
+                onChange={(e) => handleFilterChange('maxInstitutionalHolding', e.target.value)}
+                size="small"
+                type="number"
+                inputProps={{ min: 0, max: 100 }}
+              />
+            </Box>
+            
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'end',
@@ -566,6 +598,19 @@ const StockAnalysisPage: React.FC = () => {
                       {getSortIcon('totalGainLoss')}
                     </Box>
                   </TableCell>
+                  <TableCell 
+                    align="right"
+                    sx={{ 
+                      cursor: 'pointer', 
+                      '&:hover': { backgroundColor: 'action.hover' }
+                    }}
+                    onClick={() => handleSort('institutionalHoldingPercent')}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                      <span>机构持仓占比</span>
+                      {getSortIcon('institutionalHoldingPercent')}
+                    </Box>
+                  </TableCell>
                   <TableCell align="right">操作</TableCell>
                 </TableRow>
               </TableHead>
@@ -618,6 +663,17 @@ const StockAnalysisPage: React.FC = () => {
                           {formatCurrency(position.totalGainLoss)} ({formatPercent(position.totalGainLossPercent)})
                         </Typography>
                       </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: position.institutionalHoldingPercent > 50 ? 'success.main' : 
+                                 position.institutionalHoldingPercent > 20 ? 'warning.main' : 'text.secondary'
+                        }}
+                      >
+                        {formatPercent(position.institutionalHoldingPercent)}
+                      </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="查看详情">

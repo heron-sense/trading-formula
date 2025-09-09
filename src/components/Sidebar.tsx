@@ -20,6 +20,7 @@ import {
   Business
 } from '@mui/icons-material';
 import { SidebarProps, MenuItem } from '../types';
+import { brandingConfig } from '../config/branding';
 
 const drawerWidth: number = 280;
 
@@ -106,7 +107,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 mr: 3,
                 justifyContent: 'center',
                 color: 'primary.main',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                '& .MuiSvgIcon-root': {
+                  fontSize: '1.5rem' // 调大icon尺寸
+                }
               }}
             >
               {item.icon}
@@ -243,52 +247,111 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           }}
         />
         
-        {/* Logo和标题 - 左侧 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1, height: '100%' }}>
+        {/* 三块布局：Logo + 标题区域 + Slogan区域 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1, height: '100%', width: '100%' }}>
+          {/* 左侧：方形Logo */}
           <Box
             sx={{
               width: 48,
-              height: '100%',
-              borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.2)',
+              height: 48,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: 2,
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              minHeight: 48
+              overflow: 'hidden',
+              flexShrink: 0
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', fontSize: '1.2rem' }}>
-              H
-            </Typography>
+            <img
+              src={brandingConfig.getConfig().logo.src}
+              alt={brandingConfig.getConfig().logo.alt}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'brightness(0) invert(1)' // 将SVG转为白色
+              }}
+            />
           </Box>
-          <Box>
-            <Typography 
-              variant="subtitle1" 
-              sx={{
-                fontWeight: 600,
-                color: 'white',
-                fontSize: '0.9rem',
-                letterSpacing: '0.3px',
-                lineHeight: 1.2
-              }}
-            >
-              HTF Frontend
-            </Typography>
-            <Typography 
-              variant="caption" 
-              sx={{
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontSize: '0.65rem',
-                fontWeight: 400,
-                lineHeight: 1,
-                display: 'block'
-              }}
-            >
-              Management System
-            </Typography>
+          
+          {/* 右侧：上下平分区域 */}
+          <Box sx={{ 
+            flex: 1, 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}>
+            {/* 上半部分：标题 */}
+            <Box sx={{ 
+              height: '60%', 
+              display: 'flex', 
+              alignItems: 'flex-end',
+              justifyContent: 'flex-start',
+              pb: 0.5
+            }}>
+              <Typography 
+                variant="subtitle1" 
+                sx={{
+                  fontWeight: 600,
+                  color: 'white',
+                  fontSize: '1.0rem',
+                  letterSpacing: '0.1px',
+                  lineHeight: 1.1,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                {brandingConfig.getConfig().title}
+              </Typography>
+            </Box>
+            
+            {/* 下半部分：Slogan */}
+            <Box sx={{ 
+              height: '40%', 
+              display: 'flex', 
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              width: '100%',
+              pt: 0.5
+            }}>
+              {brandingConfig.getConfig().slogan.text.split(' ').slice(0, 3).map((word, index) => {
+                let alignment = 'left';
+                if (index === 1) alignment = 'center';
+                if (index === 2) alignment = 'right';
+                
+                return (
+                  <Box
+                    key={index}
+                    sx={{
+                      flex: 1,
+                      textAlign: alignment as 'left' | 'center' | 'right',
+                      minWidth: 0, // 允许收缩
+                      px: 0.5
+                    }}
+                  >
+                    <Typography 
+                      variant="caption" 
+                      sx={{
+                        color: brandingConfig.getConfig().slogan.style?.color || 'rgba(255, 255, 255, 0.8)',
+                        fontSize: '0.75rem', // 从 0.9rem 调小到 0.75rem
+                        fontWeight: brandingConfig.getConfig().slogan.style?.fontWeight || 400,
+                        opacity: brandingConfig.getConfig().slogan.style?.opacity || 0.8,
+                        letterSpacing: brandingConfig.getConfig().slogan.style?.letterSpacing || '0.2px',
+                        lineHeight: 1,
+                        display: 'block',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
+                      {word}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
         </Box>
       </Box>

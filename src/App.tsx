@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import {
   Box, 
@@ -30,6 +30,29 @@ const hiddenWidth: number = 0;
 const App: React.FC = () => {
   const [sidebarState, setSidebarState] = useState<SidebarState>('open');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true); // 默认已登录，方便开发
+  
+  // 滚动文字状态
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  
+  const scrollTexts = [
+    "天之道，损有余而偿不足；人之道则不然，损不足以奉有余 ——《道德经》",
+    "自强不息，止于至善——《厦门大学校训》",
+    "我能够计算天体之间的引力，却无法计算人性的贪婪——《牛顿》"
+  ];
+
+  // 滚动文字定时器
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentTextIndex((prevIndex) => (prevIndex + 1) % scrollTexts.length);
+        setIsAnimating(false);
+      }, 500); // 动画持续时间
+    }, 1800000); // 每30分钟切换一次
+
+    return () => clearInterval(interval);
+  }, [scrollTexts.length]);
 
   const handleSidebarToggle = (): void => {
     setSidebarState(prev => prev === 'open' ? 'hidden' : 'open');
@@ -74,12 +97,32 @@ const App: React.FC = () => {
             aria-label="toggle sidebar"
             onClick={handleSidebarToggle}
             edge="start"
-            sx={{ mr: 2 }}
+            sx={{ 
+              mr: 2,
+              '& .MuiSvgIcon-root': {
+                fontSize: '1.8rem' // 调大菜单icon
+              }
+            }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            HTF Frontend - 管理系统
+          <Typography 
+            variant="body1" 
+            noWrap 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              transform: isAnimating ? 'translateY(-100%)' : 'translateY(0)',
+              opacity: isAnimating ? 0 : 1,
+              transition: 'all 0.5s ease-in-out',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: 'calc(100vw - 200px)', // 防止文字过长
+              fontSize: '0.9rem', // 调小字体
+              fontWeight: 400 // 调轻字重
+            }}
+          >
+            {scrollTexts[currentTextIndex]}
           </Typography>
           <Typography variant="body2" sx={{ mr: 2, opacity: 0.8 }}>
             {sidebarState === 'open' && '侧边栏已展开'}
