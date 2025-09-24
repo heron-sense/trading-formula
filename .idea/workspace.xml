@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/ZigBrains.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/libraries/Zig_SDK.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/trading-formula.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/zigbrains.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build.zig" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build.zig.zon" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main.zig" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/root.zig" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="HBZeQMnA" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="32uknkGsSyMXdqkcyTE7T8DrH7X" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "Zig build.Build and Run.executor": "Run",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/admin/RustroverProjects/trading-formula",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.first.attach.projects": "true",
+    "settings.editor.selected.configurable": "editor.preferences.fonts.default",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="Build and Run" type="ZIGBRAINS_BUILD" factoryName="ZIGBRAINS_BUILD" temporary="true">
+      <ZigBrainsOption name="workingDirectory" value="$PROJECT_DIR$" />
+      <ZigBrainsOption name="buildSteps" value="run" />
+      <ZigBrainsOption name="compilerArgs" value="" />
+      <ZigBrainsOption name="debugBuildSteps" value="" />
+      <ZigBrainsOption name="debugCompilerArgs" value="" />
+      <ZigBrainsOption name="exePath" value="" />
+      <ZigBrainsOption name="exeArgs" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Zig build.Build and Run" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="" />
+      <created>1758278013691</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1758278013691</updated>
+      <workItem from="1758278014693" duration="7296000" />
+      <workItem from="1758285327744" duration="1121000" />
+      <workItem from="1758286512866" duration="9553000" />
+      <workItem from="1758677379437" duration="249000" />
+      <workItem from="1758679283691" duration="51000" />
+      <workItem from="1758679337803" duration="160000" />
+      <workItem from="1758679729543" duration="237000" />
+      <workItem from="1758679994378" duration="245000" />
+      <workItem from="1758680269074" duration="15000" />
+      <workItem from="1758680395917" duration="773000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
