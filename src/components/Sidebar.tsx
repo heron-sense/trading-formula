@@ -15,8 +15,7 @@ import {
 import {
   Dashboard,
   Analytics,
-  ExpandLess,
-  ExpandMore,
+  ChevronRight,
   Business
 } from '@mui/icons-material';
 import { SidebarProps, MenuItem } from '../types';
@@ -125,8 +124,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               }}
             />
             {hasChildren && (
-              <Box sx={{ transition: 'transform 0.3s ease', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                {isExpanded ? <ExpandLess /> : <ExpandMore />}
+              <Box sx={{ 
+                transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)', 
+                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ChevronRight />
               </Box>
             )}
           </ListItemButton>

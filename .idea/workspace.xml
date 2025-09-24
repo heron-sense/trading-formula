@@ -5,19 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/ZigBrains.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Zig_SDK.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/trading-formula.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/zigbrains.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build.zig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build.zig.zon" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main.zig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/root.zig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,6 +30,7 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
     "Zig build.Build and Run.executor": "Run",
     "git-widget-placeholder": "main",
@@ -54,6 +43,7 @@
     "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
     "org.rust.first.attach.projects": "true",
     "settings.editor.selected.configurable": "editor.preferences.fonts.default",
+    "ts.external.directory.path": "/Users/admin/RustroverProjects/trading-formula/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -95,7 +85,8 @@
       <workItem from="1758679729543" duration="237000" />
       <workItem from="1758679994378" duration="245000" />
       <workItem from="1758680269074" duration="15000" />
-      <workItem from="1758680395917" duration="773000" />
+      <workItem from="1758680395917" duration="1880000" />
+      <workItem from="1758682708636" duration="1523000" />
     </task>
     <servers />
   </component>

@@ -37,3 +37,24 @@ export interface Technology {
   title: string;
   description: string;
 }
+
+// Banner卡片类型
+export interface BannerCard {
+  id: string;
+  title: string;
+  description: string;
+  image?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  actionText?: string;
+  actionUrl?: string;
+}
+
+// Banner配置类型
+export interface BannerConfig {
+  cards: BannerCard[];
+  autoPlay: boolean;
+  autoPlayInterval: number; // 毫秒
+  showIndicators: boolean;
+  showArrows: boolean;
+}
