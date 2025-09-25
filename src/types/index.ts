@@ -15,6 +15,7 @@ export interface SubMenuItem {
   id: string;
   title: string;
   path: string;
+  children?: SubMenuItem[];
 }
 
 // 侧边栏组件Props类型

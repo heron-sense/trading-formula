@@ -20,6 +20,8 @@ import {
 } from '@mui/icons-material';
 import { SidebarProps, MenuItem } from '../types';
 import { brandingConfig } from '../config/branding';
+import PortfolioIcon from './icons/PortfolioIcon';
+import CustomArrow from './icons/CustomArrow';
 
 const drawerWidth: number = 280;
 
@@ -31,11 +33,21 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
   const menuItems: MenuItem[] = [
     {
       id: 'dashboard',
-      title: '仪表板',
+      title: '我的投资',
       icon: <Dashboard />,
       path: '/',
       children: [
-        { id: 'portfolio', title: 'Portfolio', path: '/analytics/stocks' }
+        { id: 'portfolio', title: 'Portfolio', path: '/analytics/stocks' },
+        { id: 'strategy', title: 'Strategy', path: '/strategy' }
+      ]
+    },
+    {
+      id: 'marketplace',
+      title: 'Market Place',
+      icon: <Analytics />,
+      path: '/marketplace',
+      children: [
+        { id: 'securities', title: 'Favorites', path: '/marketplace/securities' }
       ]
     },
     {
@@ -89,14 +101,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             <ListItemButton
               onClick={hasChildren ? () => handleExpandClick(item.id) : () => handleMenuClick(item.path)}
               sx={{
-                height: 48,
-                minHeight: 48,
+                height: 56,
+                minHeight: 56,
                 justifyContent: 'initial',
                 px: 1.5,
                 transition: 'all 0.3s ease',
-                backgroundColor: isActiveRoute(item.path) ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
+                backgroundColor: isActiveRoute(item.path) ? 'rgba(192, 192, 192, 0.5)' : 'transparent',
                 '&:hover': {
-                  backgroundColor: 'rgba(25, 118, 210, 0.15)'
+                  backgroundColor: 'rgba(25, 118, 210, 0.25)'
                 }
               }}
             >
@@ -131,7 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <ChevronRight />
+                <CustomArrow sx={{ fontSize: 22 }} />
               </Box>
             )}
           </ListItemButton>
@@ -149,45 +161,103 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             }}
           >
             <List component="div" disablePadding>
-              {item.children?.map((child) => (
-                <ListItem key={child.id} disablePadding>
-                  <ListItemButton
-                    onClick={() => handleMenuClick(child.path)}
-                    sx={{
-                      height: 40,
-                      minHeight: 40,
-                      pl: 8,
-                      transition: 'all 0.3s ease',
-                      backgroundColor: isActiveRoute(child.path) ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.12)'
-                      },
-                      '&:before': {
-                        content: '""',
-                        position: 'absolute',
-                        left: 32, // 调整小圆点位置，与新的缩进保持一致
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: 4,
-                        height: 4,
-                        borderRadius: '50%',
-                        backgroundColor: 'primary.main',
-                        opacity: 0.6
-                      }
-                    }}
-                  >
-                    <ListItemText 
-                      primary={child.title}
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          fontSize: '0.875rem',
-                          color: 'text.secondary',
-                          fontWeight: 400
+              {item.children?.map((child, childIndex) => (
+                <React.Fragment key={child.id}>
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      onClick={() => {
+                        if (child.children && child.children.length > 0) {
+                          handleExpandClick(child.id);
+                        } else {
+                          handleMenuClick(child.path);
                         }
                       }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+                      sx={{
+                        height: 40,
+                        minHeight: 40,
+                        pl: 8,
+                        transition: 'all 0.3s ease',
+                        backgroundColor: isActiveRoute(child.path) 
+                          ? 'rgba(192, 192, 192, 0.5)' 
+                          : childIndex % 2 === 0 
+                            ? 'rgba(25, 118, 210, 0.03)' 
+                            : 'rgba(25, 118, 210, 0.06)',
+                        '&:hover': {
+                          backgroundColor: isActiveRoute(child.path)
+                            ? 'rgba(192, 192, 192, 0.6)'
+                            : childIndex % 2 === 0
+                              ? 'rgba(25, 118, 210, 0.08)'
+                              : 'rgba(25, 118, 210, 0.12)'
+                        },
+                      }}
+                    >
+                      <ListItemText 
+                        primary={child.title}
+                        sx={{
+                          '& .MuiListItemText-primary': {
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                            fontWeight: 400
+                          }
+                        }}
+                      />
+                      {child.children && child.children.length > 0 && (
+                        <Box sx={{ 
+                          transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)', 
+                          transform: expandedItems[child.id] ? 'rotate(90deg)' : 'rotate(0deg)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <CustomArrow sx={{ fontSize: 18 }} />
+                        </Box>
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                  {/* 渲染嵌套子菜单 */}
+                  {child.children && child.children.length > 0 && (
+                    <Collapse in={expandedItems[child.id]} timeout="auto" unmountOnExit>
+                      <List component="div" disablePadding>
+                        {child.children.map((grandChild, grandChildIndex) => (
+                          <ListItem key={grandChild.id} disablePadding>
+                            <ListItemButton
+                              onClick={() => handleMenuClick(grandChild.path)}
+                              sx={{
+                                height: 40,
+                                minHeight: 40,
+                                pl: 12,
+                                transition: 'all 0.3s ease',
+                                backgroundColor: isActiveRoute(grandChild.path) 
+                                  ? 'rgba(192, 192, 192, 0.5)' 
+                                  : grandChildIndex % 2 === 0 
+                                    ? 'rgba(25, 118, 210, 0.02)' 
+                                    : 'rgba(25, 118, 210, 0.04)',
+                                '&:hover': {
+                                  backgroundColor: isActiveRoute(grandChild.path)
+                                    ? 'rgba(192, 192, 192, 0.6)'
+                                    : grandChildIndex % 2 === 0
+                                      ? 'rgba(25, 118, 210, 0.06)'
+                                      : 'rgba(25, 118, 210, 0.08)'
+                                },
+                              }}
+                            >
+                              <ListItemText 
+                                primary={grandChild.title}
+                                sx={{
+                                  '& .MuiListItemText-primary': {
+                                    fontSize: '0.8rem',
+                                    color: 'text.secondary',
+                                    fontWeight: 400
+                                  }
+                                }}
+                              />
+                            </ListItemButton>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Collapse>
+                  )}
+                </React.Fragment>
               ))}
             </List>
           </Collapse>
@@ -218,7 +288,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 16px',
+          padding: '0 12px',
           height: 64,
           background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
           color: 'white',
@@ -227,18 +297,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
         }}
       >
         {/* 背景装饰 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -10,
-            right: -10,
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.1)',
-            zIndex: 0
-          }}
-        />
         <Box
           sx={{
             position: 'absolute',
@@ -262,9 +320,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: 2,
+              marginRight: 3,
+              marginLeft: -0.5,
               overflow: 'hidden',
-              flexShrink: 0
+              flexShrink: 0,
+              p: 0,
+              m: 0
             }}
           >
             <img
@@ -300,7 +361,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 sx={{
                   fontWeight: 600,
                   color: 'white',
-                  fontSize: '1.05rem',
+                  fontSize: '1.1rem',
                   letterSpacing: '0.1px',
                   lineHeight: 1.1,
                   whiteSpace: 'nowrap',
@@ -340,7 +401,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                       variant="caption" 
                       sx={{
                         color: brandingConfig.getConfig().slogan.style?.color || 'rgba(255, 255, 255, 0.8)',
-                        fontSize: '0.75rem', // 从 0.9rem 调小到 0.75rem
+                        fontSize: '0.85rem', // 从 0.75rem 调大到 0.85rem
                         fontWeight: brandingConfig.getConfig().slogan.style?.fontWeight || 400,
                         opacity: brandingConfig.getConfig().slogan.style?.opacity || 0.8,
                         letterSpacing: brandingConfig.getConfig().slogan.style?.letterSpacing || '0.2px',
@@ -362,9 +423,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       </Box>
 
       {/* 菜单列表 */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto', pt: 0 }}>
         {/* 带子菜单的菜单项 */}
-        <List>
+        <List sx={{ pt: 0 }}>
           {menuItems.map(renderMenuItem)}
         </List>
       </Box>

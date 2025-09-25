@@ -290,27 +290,6 @@ const StockAnalysisPage: React.FC = () => {
 
   return (
     <Box>
-      {/* 页面标题 */}
-      <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-              Portfolio
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              投资组合概览和持仓管理
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={refetchPortfolio}
-            disabled={portfolioLoading}
-          >
-            刷新数据
-          </Button>
-        </Box>
-      </Paper>
 
       {/* 投资组合概览 */}
       <Box sx={{
@@ -375,7 +354,7 @@ const StockAnalysisPage: React.FC = () => {
       </Box>
 
       {/* 筛选区域 */}
-      <Paper elevation={2} sx={{ mb: 3, borderRadius: 2 }}>
+      <Paper elevation={0} sx={{ mb: 3, borderRadius: 2, border: '1px solid rgba(0, 0, 0, 0.08)' }}>
         <Box sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
             筛选和排序
@@ -523,7 +502,7 @@ const StockAnalysisPage: React.FC = () => {
       </Paper>
 
       {/* 持仓收益展示 */}
-      <Paper elevation={2} sx={{ mb: 3, borderRadius: 2 }}>
+      <Paper elevation={0} sx={{ mb: 3, borderRadius: 2, border: '1px solid rgba(0, 0, 0, 0.08)' }}>
         <Box sx={{ p: 3 }}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
             持仓收益详情
@@ -784,7 +763,7 @@ const StockAnalysisPage: React.FC = () => {
               ) : priceHistoryData ? (
                 <Box>
                   {/* 简化的股价图表 */}
-                  <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+                  <Paper elevation={0} sx={{ p: 2, mb: 2, border: '1px solid rgba(0, 0, 0, 0.05)' }}>
                     <Typography variant="subtitle2" gutterBottom>
                       价格区间: {formatCurrency(Math.min(...priceHistoryData.map(d => d.low)))} - {formatCurrency(Math.max(...priceHistoryData.map(d => d.high)))}
                     </Typography>
@@ -892,7 +871,7 @@ const StockAnalysisPage: React.FC = () => {
               ) : tradeRecordsError ? (
                 <Alert severity="error">加载交易记录失败: {tradeRecordsError}</Alert>
               ) : tradeRecordsData ? (
-                <TableContainer component={Paper} elevation={1}>
+                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid rgba(0, 0, 0, 0.05)' }}>
                   <Table>
                     <TableHead>
                       <TableRow>
