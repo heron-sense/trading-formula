@@ -8,4 +8,4 @@ export * from './config';
 export * from '../models';
 
 // 重新导出API类型
-export * from '../services/api';
+export * from '../backend/api';

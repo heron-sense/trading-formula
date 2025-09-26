@@ -5,15 +5,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/backend/backend.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/config/config.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/crucial/logger.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/trading-formula.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/trading-formula.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.zig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.zig.zon" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/hooks.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/hooks.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/mockApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/mockApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.zig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/root.zig" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/backend/api.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="true" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="HBZeQMnA" />
@@ -28,12 +51,20 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.GoLinterPluginOnboarding": "true",
+    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
     "Zig build.Build and Run.executor": "Run",
     "git-widget-placeholder": "main",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
     "last_opened_file_path": "/Users/admin/RustroverProjects/trading-formula",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -51,6 +82,9 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="RunManager">
     <configuration name="Build and Run" type="ZIGBRAINS_BUILD" factoryName="ZIGBRAINS_BUILD" temporary="true">
@@ -63,11 +97,14 @@
       <ZigBrainsOption name="exeArgs" value="" />
       <method v="2" />
     </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Zig build.Build and Run" />
-      </list>
-    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-3b128438d3f6-4b567d62c776-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-251.25410.140" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-GO-251.25410.140" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -87,11 +124,16 @@
       <workItem from="1758680269074" duration="15000" />
       <workItem from="1758680395917" duration="1880000" />
       <workItem from="1758682708636" duration="1523000" />
+      <workItem from="1758775527223" duration="9309000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>false</integration-enabled>
+    <settings-migrated>true</settings-migrated>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

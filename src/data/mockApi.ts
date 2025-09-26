@@ -1,5 +1,5 @@
 // Mock API服务 - 模拟后端API响应
-import { ApiResponse, PaginatedResponse, PaginationParams, SearchParams } from '../services/api';
+import { ApiResponse, PaginatedResponse, PaginationParams, SearchParams } from '../backend/api';
 import { 
   User, Customer, Product, Order, DashboardStats, Notification, LogEntry,
   Stock, Position, StockMetrics, RelatedStock, PortfolioOverview,

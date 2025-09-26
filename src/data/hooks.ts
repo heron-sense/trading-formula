@@ -1,6 +1,6 @@
 // 自定义Hooks - 数据管理和状态处理
 import { useState, useEffect, useCallback } from 'react';
-import { ApiResponse, PaginatedResponse, PaginationParams, SearchParams } from '../services/api';
+import { ApiResponse, PaginatedResponse, PaginationParams, SearchParams } from '../backend/api';
 import { User, Customer, Product, DashboardStats, Notification, Stock, Position, StockMetrics, RelatedStock, PortfolioOverview, PriceDataPoint, TradeRecord } from '../models';
 import { mockApi } from './mockApi';
 
