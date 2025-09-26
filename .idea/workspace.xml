@@ -4,20 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/backend/backend.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/config/config.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/crucial/logger.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/trading-formula.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/trading-formula.iml" afterDir="false" />
+    <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="feat: add backend">
+      <change afterPath="$PROJECT_DIR$/src/pages/dashboard/dashboard.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.zig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.zig.zon" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data/hooks.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/hooks.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data/mockApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/mockApi.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.zig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/root.zig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/backend/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/backend/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,6 +44,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
+    "Go 构建.go build main.go (1).executor": "Run",
+    "Go 构建.go build main.go.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.GoLinterPluginOnboarding": "true",
     "RunOnceActivity.GoLinterPluginStorageMigration": "true",
@@ -65,7 +59,7 @@
     "git-widget-placeholder": "main",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/admin/RustroverProjects/trading-formula",
+    "last_opened_file_path": "/Users/admin/GolandProjects/trading-formula",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -73,8 +67,8 @@
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
     "org.rust.first.attach.projects": "true",
-    "settings.editor.selected.configurable": "editor.preferences.fonts.default",
-    "ts.external.directory.path": "/Users/admin/RustroverProjects/trading-formula/node_modules/typescript/lib",
+    "settings.editor.selected.configurable": "fileTemplates",
+    "ts.external.directory.path": "/Users/admin/GolandProjects/trading-formula/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -83,20 +77,42 @@
       <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/backend" />
       <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/src" />
+      <recent name="$PROJECT_DIR$/src/config" />
     </key>
   </component>
-  <component name="RunManager">
-    <configuration name="Build and Run" type="ZIGBRAINS_BUILD" factoryName="ZIGBRAINS_BUILD" temporary="true">
-      <ZigBrainsOption name="workingDirectory" value="$PROJECT_DIR$" />
-      <ZigBrainsOption name="buildSteps" value="run" />
-      <ZigBrainsOption name="compilerArgs" value="" />
-      <ZigBrainsOption name="debugBuildSteps" value="" />
-      <ZigBrainsOption name="debugCompilerArgs" value="" />
-      <ZigBrainsOption name="exePath" value="" />
-      <ZigBrainsOption name="exeArgs" value="" />
+  <component name="RunManager" selected="Go 构建.go build main.go">
+    <configuration name="go build main.go (1)" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="trading-formula" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/src/backend/main.go" />
       <method v="2" />
     </configuration>
+    <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="trading-formula" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Build and Run" type="ZIGBRAINS_BUILD" factoryName="ZIGBRAINS_BUILD" temporary="true">
+      <ZigBrainsOption name="workingDirectory" value="$PROJECT_DIR$" />
+      <envs />
+      <ZigBrainsOption name="buildSteps" value="run" />
+      <ZigBrainsOption name="compilerArgs" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go 构建.go build main.go" />
+        <item itemvalue="Go 构建.go build main.go (1)" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -131,8 +147,12 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Changes" />
+    <MESSAGE value="feat: add backend" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add backend" />
+  </component>
   <component name="VgoProject">
-    <integration-enabled>false</integration-enabled>
     <settings-migrated>true</settings-migrated>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
