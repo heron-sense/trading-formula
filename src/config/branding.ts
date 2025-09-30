@@ -33,8 +33,8 @@ export const defaultBrandingConfig: BrandingConfig = {
   slogan: {
     text: '敏锐 洞察 热忱',
     style: {
-      fontSize: '0.9rem',
-      fontWeight: 400,
+      fontSize: '1rem',
+      fontWeight: 600,
       color: 'rgba(255, 255, 255, 0.8)',
       opacity: 0.8,
       letterSpacing: '0.2px'

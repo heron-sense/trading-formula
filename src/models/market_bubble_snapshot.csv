@@ -1,0 +1,7 @@
+record_id,symbol,trading_date,market_cap,beta_factor,traded_amount,traded_qty,turnover_rate,top_price,bottom_price,pe_ratio,pb_ratio,avg_price,fr_date
+20250929APP,APP,2025-09-29,2410y,2.382,84.99y,1194w,5.34,745.610,683.500,101.33,206.48,711.362,2025-08-06
+
+
+csv的数据如上。
+其中y结尾单位是亿，因此需要乘以一亿；w结尾是万，需要乘以10000.
+帮忙生成下insert语句。

@@ -47,7 +47,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       icon: <Analytics />,
       path: '/marketplace',
       children: [
-        { id: 'securities', title: 'Favorites', path: '/marketplace/securities' }
+        { id: 'securities', title: 'Favorites', path: '/marketplace/securities' },
+        { id: 'bubble-index', title: '泡沫指数', path: '/marketplace/bubble-index' }
       ]
     },
     {
@@ -173,8 +174,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                         }
                       }}
                       sx={{
-                        height: 40,
-                        minHeight: 40,
+                        height: 42,
+                        minHeight: 42,
                         pl: 8,
                         transition: 'all 0.3s ease',
                         backgroundColor: isActiveRoute(child.path) 
@@ -223,8 +224,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                             <ListItemButton
                               onClick={() => handleMenuClick(grandChild.path)}
                               sx={{
-                                height: 40,
-                                minHeight: 40,
+                                height: 38,
+                                minHeight: 38,
                                 pl: 12,
                                 transition: 'all 0.3s ease',
                                 backgroundColor: isActiveRoute(grandChild.path) 
@@ -271,6 +272,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       variant="permanent"
       sx={{
         width: drawerWidth,
+        alignContent: 'center',
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
@@ -296,32 +298,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
           overflow: 'hidden'
         }}
       >
-        {/* 背景装饰 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: -15,
-            left: -15,
-            width: 50,
-            height: 50,
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.05)',
-            zIndex: 0
-          }}
-        />
-        
         {/* 三块布局：Logo + 标题区域 + Slogan区域 */}
         <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1, height: '100%', width: '100%' }}>
           {/* 左侧：方形Logo */}
           <Box
             sx={{
-              width: 48,
-              height: 48,
-              display: 'flex',
+              maxWidth:75,
+              maxHeight:75,
+              width: 75,
+              height: 75,
+              display:'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: 3,
-              marginLeft: -0.5,
+              marginRight: 0,
+              marginLeft: 0,
               overflow: 'hidden',
               flexShrink: 0,
               p: 0,
@@ -332,8 +322,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               src={brandingConfig.getConfig().logo.src}
               alt={brandingConfig.getConfig().logo.alt}
               style={{
-                width: '100%',
-                height: '100%',
+                width: '90%',
+                height: '90%',
+                alignItems: 'left',
                 objectFit: 'contain',
                 filter: 'brightness(0) invert(1)' // 将SVG转为白色
               }}
@@ -359,9 +350,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               <Typography 
                 variant="subtitle1" 
                 sx={{
-                  fontWeight: 600,
+                  fontWeight: 800,
                   color: 'white',
-                  fontSize: '1.1rem',
+                  fontSize: '1.05rem',
                   letterSpacing: '0.1px',
                   lineHeight: 1.1,
                   whiteSpace: 'nowrap',
@@ -375,7 +366,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             
             {/* 下半部分：Slogan */}
             <Box sx={{ 
-              height: '40%', 
+              height: '35%', 
               display: 'flex', 
               alignItems: 'flex-start',
               justifyContent: 'space-between',
@@ -401,11 +392,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                       variant="caption" 
                       sx={{
                         color: brandingConfig.getConfig().slogan.style?.color || 'rgba(255, 255, 255, 0.8)',
-                        fontSize: '0.85rem', // 从 0.75rem 调大到 0.85rem
-                        fontWeight: brandingConfig.getConfig().slogan.style?.fontWeight || 400,
+                        fontSize: '0.9rem', 
+                        fontWeight: brandingConfig.getConfig().slogan.style?.fontWeight || 600,
                         opacity: brandingConfig.getConfig().slogan.style?.opacity || 0.8,
                         letterSpacing: brandingConfig.getConfig().slogan.style?.letterSpacing || '0.2px',
-                        lineHeight: 1,
+                        lineHeight: 1.2,
                         display: 'block',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',

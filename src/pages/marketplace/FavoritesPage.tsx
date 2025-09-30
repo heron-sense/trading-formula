@@ -20,7 +20,16 @@ import {
   IconButton,
   Tooltip,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  Divider
 } from '@mui/material';
 import {
   Search,
@@ -28,7 +37,16 @@ import {
   StarBorder,
   TrendingUp,
   TrendingDown,
-  Remove
+  Remove,
+  BubbleChart,
+  Timeline,
+  Assessment,
+  Warning,
+  CheckCircle,
+  Error,
+  Info,
+  Schedule,
+  TrendingFlat
 } from '@mui/icons-material';
 
 // Securities数据类型
@@ -44,6 +62,7 @@ interface Security {
   sector: string;
   isFavorite: boolean;
 }
+
 
 // Mock数据
 const mockSecurities: Security[] = [
@@ -151,6 +170,7 @@ const FavoritesPage: React.FC = () => {
   const [priceFilter, setPriceFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 5;
+  
 
   // 过滤和搜索逻辑
   const filteredSecurities = useMemo(() => {
@@ -192,6 +212,7 @@ const FavoritesPage: React.FC = () => {
     console.log('Toggle favorite for security:', securityId);
   };
 
+
   // 格式化数字
   const formatNumber = (num: number): string => {
     if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T';
@@ -207,6 +228,7 @@ const FavoritesPage: React.FC = () => {
     if (change < 0) return '#f44336';
     return '#666';
   };
+
 
   return (
     <Box>
@@ -376,6 +398,7 @@ const FavoritesPage: React.FC = () => {
           </Alert>
         </Box>
       )}
+
     </Box>
   );
 };

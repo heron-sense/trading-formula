@@ -31,6 +31,7 @@ import ProductListPage from './pages/business/ProductListPage';
 import StockAnalysisPage from './pages/analytics/StockAnalysisPage';
 import StrategyPage from './pages/strategy/StrategyPage';
 import FavoritesPage from './pages/marketplace/FavoritesPage';
+import BubbleIndexPage from './pages/marketplace/BubbleIndexPage';
 import { SidebarState } from './types';
 
 const drawerWidth: number = 280;
@@ -393,6 +394,25 @@ const App: React.FC = () => {
             }}>
               <Box sx={{ p: 2, flexGrow: 1 }}>
                 <FavoritesPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/marketplace/bubble-index" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <BubbleIndexPage />
               </Box>
               <Footer />
             </Box>

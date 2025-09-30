@@ -1,0 +1,9 @@
+Age = 25
+Cats = [ "Cauchy", "Plato" ]
+Pi = 3.14
+
+[database_credentials]
+endpoint = "localhost:3306"
+database = "trading_formula"
+username = "root"
+password = "clearing@123"
