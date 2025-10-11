@@ -29,9 +29,12 @@ import CustomerListPage from './pages/business/CustomerListPage';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import ProductListPage from './pages/business/ProductListPage';
 import StockAnalysisPage from './pages/analytics/StockAnalysisPage';
+import VarAnalysisPage from './pages/analytics/VarAnalysisPage';
 import StrategyPage from './pages/strategy/StrategyPage';
 import FavoritesPage from './pages/marketplace/FavoritesPage';
 import BubbleIndexPage from './pages/marketplace/BubbleIndexPage';
+import StockDiagnosisPage from './pages/marketplace/StockDiagnosisPage';
+import EventsPage from './pages/marketplace/EventsPage';
 import { SidebarState } from './types';
 
 const drawerWidth: number = 280;
@@ -360,6 +363,25 @@ const App: React.FC = () => {
               <Footer />
             </Box>
           } />
+          <Route path="/var-analysis" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ flexGrow: 1 }}>
+                <VarAnalysisPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
           <Route path="/strategy" element={
             <Box sx={{ 
               position: 'fixed',
@@ -413,6 +435,44 @@ const App: React.FC = () => {
             }}>
               <Box sx={{ p: 2, flexGrow: 1 }}>
                 <BubbleIndexPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/marketplace/stock-diagnosis" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <StockDiagnosisPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/marketplace/events" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <EventsPage />
               </Box>
               <Footer />
             </Box>

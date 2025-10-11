@@ -1,0 +1,2 @@
+当前var分析页面没有识别点击的Strategy包含哪些symbol。
+麻烦修复下。期望是点击的Strategy包含多少个symbol，var分析结果页面就包含多少个卡片，每个symbol一个卡片（在这个卡片上来展示var分析时，当设定场景发生时。

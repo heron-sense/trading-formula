@@ -29,7 +29,11 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   Search,
@@ -169,7 +173,7 @@ const FavoritesPage: React.FC = () => {
   const [searchSymbol, setSearchSymbol] = useState<string>('');
   const [priceFilter, setPriceFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 5;
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
   
 
   // 过滤和搜索逻辑
@@ -206,6 +210,12 @@ const FavoritesPage: React.FC = () => {
     setCurrentPage(page);
   };
 
+  // 处理每页条数变化
+  const handleItemsPerPageChange = (event: any) => {
+    setItemsPerPage(event.target.value);
+    setCurrentPage(1); // 重置到第一页
+  };
+
   // 处理收藏状态切换
   const handleFavoriteToggle = (securityId: string) => {
     // 这里可以添加实际的收藏/取消收藏逻辑
@@ -235,7 +245,7 @@ const FavoritesPage: React.FC = () => {
       {/* 页面标题 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-          Favorites
+          Watchlist
         </Typography>
       </Box>
 
@@ -373,8 +383,35 @@ const FavoritesPage: React.FC = () => {
         </TableContainer>
 
         {/* 分页 */}
-        {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, borderTop: '1px solid rgba(0, 0, 0, 0.08)' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mt: 3,
+          pt: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider'
+        }}>
+          <Typography variant="body2" color="text.secondary">
+            共 {filteredSecurities.length} 条记录，第 {currentPage} 页，共 {totalPages} 页
+          </Typography>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              每页显示：
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <Select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                variant="outlined"
+              >
+                <MenuItem value={5}>5</MenuItem>
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={20}>20</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+              </Select>
+            </FormControl>
             <Pagination
               count={totalPages}
               page={currentPage}
@@ -382,9 +419,10 @@ const FavoritesPage: React.FC = () => {
               color="primary"
               showFirstButton
               showLastButton
+              size="small"
             />
-          </Box>
-        )}
+          </Stack>
+        </Box>
       </Paper>
 
       {/* 空状态 */}

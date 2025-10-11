@@ -47,8 +47,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
       icon: <Analytics />,
       path: '/marketplace',
       children: [
-        { id: 'securities', title: 'Favorites', path: '/marketplace/securities' },
-        { id: 'bubble-index', title: '泡沫指数', path: '/marketplace/bubble-index' }
+        { id: 'securities', title: 'Watchlist', path: '/marketplace/securities' },
+        { id: 'bubble-index', title: '泡沫指数', path: '/marketplace/bubble-index' },
+        { id: 'stock-diagnosis', title: '股票诊断', path: '/marketplace/stock-diagnosis' },
+        { id: 'events', title: 'Events', path: '/marketplace/events' }
       ]
     },
     {

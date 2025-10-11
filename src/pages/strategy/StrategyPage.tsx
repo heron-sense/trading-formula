@@ -200,6 +200,14 @@ const StrategyPage: React.FC = () => {
     setStrategies(prev => prev.filter(s => s.id !== id));
   };
 
+  // 处理VaR分析
+  const handleVaRAnalysis = (strategy: Strategy) => {
+    // 跳转到VaR分析页面，传递策略信息
+    const assets = strategy.assets.map(asset => asset.symbol).join(',');
+    const assetsData = JSON.stringify(strategy.assets);
+    window.open(`/var-analysis?strategy=${strategy.id}&name=${encodeURIComponent(strategy.name)}&assets=${encodeURIComponent(assets)}&assetsData=${encodeURIComponent(assetsData)}`, '_blank');
+  };
+
   // 查看风险详情
   const handleViewRisk = (strategy: Strategy) => {
     setSelectedRiskStrategy(strategy);
@@ -244,6 +252,7 @@ const StrategyPage: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600 }}>资产组合</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>行业板块</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>备注</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Value at Risk</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>操作</TableCell>
               </TableRow>
             </TableHead>
@@ -326,6 +335,21 @@ const StrategyPage: React.FC = () => {
                     >
                       {strategy.notes || '无备注'}
                     </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => handleVaRAnalysis(strategy)}
+                      sx={{ 
+                        fontSize: '0.75rem',
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                        px: 1.5
+                      }}
+                    >
+                      分析
+                    </Button>
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>

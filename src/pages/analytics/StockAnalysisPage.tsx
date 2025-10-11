@@ -150,6 +150,12 @@ const StockAnalysisPage: React.FC = () => {
     setActiveTab(0);
   };
 
+  // 处理VaR分析
+  const handleVaRAnalysis = (position: any) => {
+    // 跳转到VaR分析页面，传递股票信息
+    window.open(`/var-analysis?symbol=${position.stockSymbol}&name=${encodeURIComponent(position.stockName)}`, '_blank');
+  };
+
   // 关闭弹窗
   const handleCloseDialog = () => {
     setDialogOpen(false);
@@ -590,6 +596,7 @@ const StockAnalysisPage: React.FC = () => {
                       {getSortIcon('institutionalHoldingPercent')}
                     </Box>
                   </TableCell>
+                  <TableCell align="right">Value at Risk</TableCell>
                   <TableCell align="right">操作</TableCell>
                 </TableRow>
               </TableHead>
@@ -653,6 +660,21 @@ const StockAnalysisPage: React.FC = () => {
                       >
                         {formatPercent(position.institutionalHoldingPercent)}
                       </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleVaRAnalysis(position)}
+                        sx={{ 
+                          fontSize: '0.75rem',
+                          textTransform: 'none',
+                          minWidth: 'auto',
+                          px: 1.5
+                        }}
+                      >
+                        分析
+                      </Button>
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="查看详情">
