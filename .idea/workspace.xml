@@ -5,19 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="feat: add backend">
-      <change afterPath="$PROJECT_DIR$/src/backend/essentials/arangodb.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/data/body.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/marketplace/EventsPage.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/marketplace/event.model.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/backend/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/backend/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/marketplace/register.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/marketplace/register.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/market_bubble_snapshot.csv" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -75,7 +64,7 @@
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
     &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preference.GoLinterConfigurable&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;ts.external.directory.path&quot;: &quot;/Users/admin/GolandProjects/trading-formula/node_modules/typescript/lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
@@ -94,7 +83,7 @@
       <recent name="$PROJECT_DIR$/src/config" />
     </key>
   </component>
-  <component name="RunManager" selected="Go 构建.go build main.go (1)">
+  <component name="RunManager" selected="Zig build.Build and Run">
     <configuration name="go build main.go (1)" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="trading-formula" />
       <working_directory value="$PROJECT_DIR$" />
@@ -118,11 +107,6 @@
       <ZigBrainsOption name="compilerArgs" value="" />
       <method v="2" />
     </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Go 构建.go build main.go (1)" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -152,6 +136,8 @@
       <workItem from="1758682708636" duration="1523000" />
       <workItem from="1758775527223" duration="9309000" />
       <workItem from="1758886172483" duration="3000" />
+      <workItem from="1763549797471" duration="39000" />
+      <workItem from="1763549847025" duration="389000" />
     </task>
     <servers />
   </component>
