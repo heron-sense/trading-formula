@@ -18,6 +18,8 @@ func main() {
 		log.Fatalf("Parse config: %v", err)
 	}
 
+	essentials.Init()
+
 	err = essentials.NewDatabase(&cfg.DatabaseCredentials)
 	if err != nil {
 		log.Fatalf("Error initializing database: %v", err)

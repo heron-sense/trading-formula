@@ -16,4 +16,5 @@ func Register(group *route.RouterGroup) {
 	group.POST("/api/marketplace/securities/:id/favorite", marketplaceHandler.ToggleFavorite)
 	group.GET("/api/marketplace/favorites", marketplaceHandler.GetFavorites)
 	group.POST("/api/marketplace/search", marketplaceHandler.SearchSecurities)
+	group.GET("/api/marketplace/events", marketplaceHandler.GetEvents)
 }
