@@ -9,43 +9,45 @@ import {
   Alert,
   InputAdornment,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  Link,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Person,
-  Lock
+  Lock,
+  Email,
 } from '@mui/icons-material';
+import { login } from '../../auth/authApi';
 
 interface LoginFormData {
   username: string;
+  email: string;
   password: string;
 }
 
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onSuccess: () => void;
+  onGoRegister: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onSuccess, onGoRegister }) => {
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
-    password: ''
+    email: '',
+    password: '',
   });
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleInputChange = (field: keyof LoginFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
-    // 清除错误信息
-    if (error) setError('');
-  };
-
-  const handleTogglePasswordVisibility = () => {
-    setShowPassword(prev => !prev);
-  };
+  const handleInputChange =
+    (field: keyof LoginFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: event.target.value }));
+      if (error) setError('');
+    };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -53,18 +55,14 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      // 模拟登录API调用
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // 简单的验证逻辑
-      if (formData.username === 'admin' && formData.password === 'admin123') {
-        // 登录成功，跳转到主页
-        window.location.href = '/';
-      } else {
-        setError('用户名或密码错误');
-      }
+      await login({
+        username: formData.username.trim(),
+        email_addr: formData.email.trim(),
+        password: formData.password,
+      });
+      onSuccess();
     } catch (err) {
-      setError('登录失败，请稍后重试');
+      setError(err instanceof Error ? err.message : '登录失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -78,7 +76,7 @@ const LoginPage: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: 2
+        padding: 2,
       }}
     >
       <Container maxWidth="sm">
@@ -89,10 +87,9 @@ const LoginPage: React.FC = () => {
             borderRadius: 3,
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
+            border: '1px solid rgba(255, 255, 255, 0.2)',
           }}
         >
-          {/* Logo和标题 */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Box
               sx={{
@@ -104,14 +101,19 @@ const LoginPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 16px',
-                boxShadow: '0 8px 32px rgba(25, 118, 210, 0.3)'
+                boxShadow: '0 8px 32px rgba(25, 118, 210, 0.3)',
               }}
             >
               <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
                 H
               </Typography>
             </Box>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700, color: '#1976d2' }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              sx={{ fontWeight: 700, color: '#1976d2' }}
+            >
               HTF Frontend
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -119,7 +121,6 @@ const LoginPage: React.FC = () => {
             </Typography>
           </Box>
 
-          {/* 登录表单 */}
           <Box component="form" onSubmit={handleSubmit}>
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
@@ -143,11 +144,26 @@ const LoginPage: React.FC = () => {
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                }
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+
+            <TextField
+              fullWidth
+              label="邮箱"
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange('email')}
+              margin="normal"
+              required
+              autoComplete="email"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email color="action" />
+                  </InputAdornment>
+                ),
               }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
@@ -169,7 +185,7 @@ const LoginPage: React.FC = () => {
                   <InputAdornment position="end">
                     <IconButton
                       aria-label="toggle password visibility"
-                      onClick={handleTogglePasswordVisibility}
+                      onClick={() => setShowPassword((v) => !v)}
                       edge="end"
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
@@ -177,11 +193,7 @@ const LoginPage: React.FC = () => {
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                }
-              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <Button
@@ -189,7 +201,9 @@ const LoginPage: React.FC = () => {
               fullWidth
               variant="contained"
               size="large"
-              disabled={loading || !formData.username || !formData.password}
+              disabled={
+                loading || !formData.username || !formData.email || !formData.password
+              }
               sx={{
                 mt: 3,
                 mb: 2,
@@ -201,20 +215,23 @@ const LoginPage: React.FC = () => {
                 },
                 '&:disabled': {
                   background: 'rgba(0, 0, 0, 0.12)',
-                }
+                },
               }}
             >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                '登录'
-              )}
+              {loading ? <CircularProgress size={24} color="inherit" /> : '登录'}
             </Button>
 
-            {/* 提示信息 */}
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
               <Typography variant="body2" color="text.secondary">
-                测试账号：admin / admin123
+                还没有账号？{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  onClick={onGoRegister}
+                  underline="hover"
+                >
+                  去注册
+                </Link>
               </Typography>
             </Box>
           </Box>

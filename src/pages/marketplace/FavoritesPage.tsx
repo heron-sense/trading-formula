@@ -173,7 +173,7 @@ const FavoritesPage: React.FC = () => {
   const [searchSymbol, setSearchSymbol] = useState<string>('');
   const [priceFilter, setPriceFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   
 
   // 过滤和搜索逻辑
@@ -405,10 +405,8 @@ const FavoritesPage: React.FC = () => {
                 onChange={handleItemsPerPageChange}
                 variant="outlined"
               >
-                <MenuItem value={5}>5</MenuItem>
                 <MenuItem value={10}>10</MenuItem>
                 <MenuItem value={20}>20</MenuItem>
-                <MenuItem value={50}>50</MenuItem>
                 <MenuItem value={100}>100</MenuItem>
               </Select>
             </FormControl>

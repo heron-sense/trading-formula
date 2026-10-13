@@ -39,6 +39,16 @@ import {
   TrendingFlat,
   Refresh
 } from '@mui/icons-material';
+import { getAccessToken, getAuthUser } from '../../auth/session';
+
+function authFetchHeaders(): HeadersInit {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const user = getAuthUser();
+  if (user?.id) headers['X-User-Id'] = user.id;
+  return headers;
+}
 
 // 泡沫指数快照数据类型
 interface BubbleSnapshot {
@@ -134,7 +144,10 @@ const BubbleIndexPage: React.FC = () => {
       // 为每个证券获取泡沫指数数据
       for (const security of securities) {
         try {
-          const response = await fetch(`http://localhost:3344/api/marketplace/security/${security}/bubble_snapshot/list`);
+          const response = await fetch(`/api/marketplace/security/${security}/bubble_snapshot/list`, {
+            headers: authFetchHeaders(),
+            credentials: 'include',
+          });
           if (response.ok) {
             const data = await response.json();
             const bubbleSnapshots = data.data || [];
@@ -184,7 +197,10 @@ const BubbleIndexPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:3344/api/marketplace/security/${snapshot.symbol}/bubble_snapshot/list`);
+      const response = await fetch(`/api/marketplace/security/${snapshot.symbol}/bubble_snapshot/list`, {
+        headers: authFetchHeaders(),
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setBubbleSnapshots(data.data || []);
@@ -436,7 +452,7 @@ const BubbleIndexPage: React.FC = () => {
 
           {/* 分页组件 */}
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
+            rowsPerPageOptions={[10, 20, 100]}
             component="div"
             count={filteredSnapshots.length}
             rowsPerPage={rowsPerPage}

@@ -35,6 +35,21 @@ export interface Customer {
 
 export type CustomerStatus = 'active' | 'inactive' | 'pending';
 
+// 员工相关类型
+export interface Employee {
+  id: string;
+  companyId: string;
+  userId?: string;
+  name: string;
+  email: string;
+  phone: string;
+  title: string;
+  department: string;
+  status: 'active' | 'inactive' | 'pending';
+  hiredAt: string;
+  avatar?: string;
+}
+
 // 产品相关类型
 export interface Product {
   id: string;

@@ -1,5 +1,12 @@
 // API基础配置和请求封装
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import {
+  ensureAccessTokenOrRedirect,
+  getAccessToken,
+  getAuthUser,
+  redirectToLogin,
+  clearSession,
+} from '../auth/session';
 
 // API响应基础类型
 export interface ApiResponse<T = any> {
@@ -30,11 +37,19 @@ export interface SearchParams {
   [key: string]: any;
 }
 
+function requestUrl(config?: { url?: string; baseURL?: string }): string {
+  const base = config?.baseURL || '';
+  const url = config?.url || '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${base}${url}`;
+}
+
 // 创建axios实例
 const createApiInstance = (): AxiosInstance => {
   const instance = axios.create({
-    baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
     timeout: 10000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -43,15 +58,17 @@ const createApiInstance = (): AxiosInstance => {
   // 请求拦截器
   instance.interceptors.request.use(
     (config: any) => {
-      // 添加认证token
-      const token = localStorage.getItem('auth_token');
+      const token = getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-      
-      // 添加请求时间戳
+      const user = getAuthUser();
+      if (user?.id) {
+        config.headers['X-User-Id'] = user.id;
+      }
+
       config.metadata = { startTime: new Date() };
-      
+
       console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data);
       return config;
     },
@@ -64,29 +81,35 @@ const createApiInstance = (): AxiosInstance => {
   // 响应拦截器
   instance.interceptors.response.use(
     (response: AxiosResponse) => {
-      const duration = new Date().getTime() - (response.config.metadata?.startTime?.getTime() || 0);
-      console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} (${duration}ms)`, response.data);
-      
-      // 统一处理响应格式
-      if (response.data && typeof response.data === 'object') {
-        return response;
-      }
-      
+      const duration =
+        new Date().getTime() - (response.config.metadata?.startTime?.getTime() || 0);
+      console.log(
+        `✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} (${duration}ms)`,
+        response.data
+      );
+
+      ensureAccessTokenOrRedirect(requestUrl(response.config));
       return response;
     },
     (error: any) => {
-      const duration = new Date().getTime() - error.config?.metadata?.startTime?.getTime();
-      console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} (${duration}ms)`, error.response?.data || error.message);
-      
-      // 统一错误处理
+      const duration =
+        new Date().getTime() - (error.config?.metadata?.startTime?.getTime() || 0);
+      console.error(
+        `❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} (${duration}ms)`,
+        error.response?.data || error.message
+      );
+
+      if (error.config) {
+        ensureAccessTokenOrRedirect(requestUrl(error.config));
+      }
+
       if (error.response) {
         const { status, data } = error.response;
-        
+
         switch (status) {
           case 401:
-            // 未授权，清除token并跳转到登录页
-            localStorage.removeItem('auth_token');
-            window.location.href = '/login';
+            clearSession();
+            redirectToLogin();
             break;
           case 403:
             console.error('权限不足');
@@ -105,7 +128,7 @@ const createApiInstance = (): AxiosInstance => {
       } else {
         console.error('请求配置错误:', error.message);
       }
-      
+
       return Promise.reject(error);
     }
   );

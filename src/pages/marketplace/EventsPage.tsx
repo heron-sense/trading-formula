@@ -570,7 +570,7 @@ const EventsPage: React.FC = () => {
 
         {/* 分页 */}
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[10, 20, 100]}
           component="div"
           count={filteredEvents.length}
           rowsPerPage={rowsPerPage}

@@ -7,6 +7,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/heron-sense/trading-formula.git/src/backend/essentials"
+	"github.com/heron-sense/trading-formula.git/src/pages/business"
 	"github.com/heron-sense/trading-formula.git/src/pages/dashboard"
 	"github.com/heron-sense/trading-formula.git/src/pages/marketplace"
 	hertztracing "github.com/hertz-contrib/obs-opentelemetry/tracing"
@@ -25,15 +26,19 @@ func main() {
 		log.Fatalf("Error initializing database: %v", err)
 	}
 
+	essentials.ConfigureAuthValidate(cfg.Auth.ValidateURL, cfg.Auth.IsEnabled())
+
 	tracer, tcfg := hertztracing.NewServerTracer()
 	h := server.Default(tracer,
 		server.WithHostPorts(fmt.Sprintf(":%d", 3344)),
 	)
 	h.Use(hertztracing.ServerMiddleware(tcfg))
+	// Every data API (except OPTIONS) must pass EdDSA-island /validate.
+	h.Use(essentials.AuthValidateMiddleware())
 
-	// Initialize marketplace handler
-	mpGroup := h.Group("")
-	marketplace.Register(mpGroup)
+	apiGroup := h.Group("")
+	marketplace.Register(apiGroup)
+	business.Register(apiGroup)
 
 	h.Run()
 

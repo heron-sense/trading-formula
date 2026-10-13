@@ -56,13 +56,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
     },
     {
       id: 'business',
-      title: '客户配置',
+      title: '自主管理',
       icon: <Business />,
       path: '/business',
       children: [
         { id: 'products', title: '产品管理', path: '/business/products' },
         { id: 'orders', title: '订单管理', path: '/business/orders' },
-        { id: 'customers', title: '客户管理', path: '/business/customers' }
+        { id: 'customers', title: '客户管理', path: '/business/customers' },
+        { id: 'employees', title: '员工管理', path: '/business/employees' }
       ]
     },
     {

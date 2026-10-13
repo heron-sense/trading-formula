@@ -7,3 +7,7 @@ endpoint = "localhost:3306"
 database = "trading_formula"
 username = "root"
 password = "clearing@123"
+
+[auth]
+validate_url = "http://localhost:8080/validate"
+enabled = true

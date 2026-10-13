@@ -25,7 +25,10 @@ import Footer from './components/Footer';
 import HomePage from './pages/dashboard/HomePage';
 import AboutPage from './pages/dashboard/AboutPage';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import CustomerListPage from './pages/business/CustomerListPage';
+import CustomerImportPage from './pages/business/CustomerImportPage';
+import EmployeeListPage from './pages/business/EmployeeListPage';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import ProductListPage from './pages/business/ProductListPage';
 import StockAnalysisPage from './pages/analytics/StockAnalysisPage';
@@ -37,16 +40,39 @@ import StockDiagnosisPage from './pages/marketplace/StockDiagnosisPage';
 import EventsPage from './pages/marketplace/EventsPage';
 import OptionsAnalysisPage from './pages/marketplace/OptionsAnalysisPage';
 import { SidebarState } from './types';
+import { clearSession, getAuthUser, isLoggedIn } from './auth/session';
 
 const drawerWidth: number = 280;
 const hiddenWidth: number = 0;
 
+type AuthView = 'login' | 'register';
+
 const App: React.FC = () => {
   const [sidebarState, setSidebarState] = useState<SidebarState>('open');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true); // 默认已登录，方便开发
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isLoggedIn());
+  const [authView, setAuthView] = useState<AuthView>('login');
+  const [currentUserName, setCurrentUserName] = useState<string>(
+    () => getAuthUser()?.name || ''
+  );
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  
+
+  useEffect(() => {
+    if (isLoggedIn()) {
+      setIsAuthenticated(true);
+      setCurrentUserName(getAuthUser()?.name || '');
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth') === 'login' || params.get('auth') === 'register') {
+      setIsAuthenticated(false);
+      setAuthView(params.get('auth') === 'register' ? 'register' : 'login');
+    }
+  }, []);
 
   const handleSidebarToggle = (): void => {
     setSidebarState(prev => prev === 'open' ? 'hidden' : 'open');
@@ -56,8 +82,17 @@ const App: React.FC = () => {
     setSidebarState('open');
   };
 
+  const handleAuthSuccess = (): void => {
+    setCurrentUserName(getAuthUser()?.name || '');
+    setIsAuthenticated(true);
+    setAuthView('login');
+  };
+
   const handleLogout = (): void => {
+    clearSession();
+    setCurrentUserName('');
     setIsAuthenticated(false);
+    setAuthView('login');
   };
 
   const handleAvatarClick = (event: React.MouseEvent<HTMLElement>): void => {
@@ -93,9 +128,21 @@ const App: React.FC = () => {
 
   const isSidebarHidden: boolean = sidebarState === 'hidden';
 
-  // 如果未登录，显示登录页面
   if (!isAuthenticated) {
-    return <LoginPage />;
+    if (authView === 'register') {
+      return (
+        <RegisterPage
+          onSuccess={handleAuthSuccess}
+          onGoLogin={() => setAuthView('login')}
+        />
+      );
+    }
+    return (
+      <LoginPage
+        onSuccess={handleAuthSuccess}
+        onGoRegister={() => setAuthView('register')}
+      />
+    );
   }
 
   return (
@@ -164,7 +211,7 @@ const App: React.FC = () => {
                   fontWeight: 'bold'
                 }}
               >
-                U
+                {(currentUserName || 'U').charAt(0).toUpperCase()}
               </Avatar>
             </IconButton>
           </Tooltip>
@@ -287,7 +334,6 @@ const App: React.FC = () => {
               <Footer />
             </Box>
           } />
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/business/customers" element={
             <Box sx={{ 
               position: 'fixed',
@@ -303,6 +349,44 @@ const App: React.FC = () => {
             }}>
               <Box sx={{ p: 2, flexGrow: 1 }}>
                 <CustomerListPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/customers/import" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <CustomerImportPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/employees" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <EmployeeListPage />
               </Box>
               <Footer />
             </Box>

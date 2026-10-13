@@ -129,7 +129,7 @@ const mockStrategies: Strategy[] = [
 const StrategyPage: React.FC = () => {
   const [strategies, setStrategies] = useState<Strategy[]>(mockStrategies);
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [formData, setFormData] = useState<Partial<Strategy>>({});
@@ -380,16 +380,32 @@ const StrategyPage: React.FC = () => {
         </TableContainer>
 
         {/* 分页 */}
-        {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, p: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            每页显示：
+          </Typography>
+          <FormControl size="small" sx={{ minWidth: 80 }}>
+            <Select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setPage(1);
+              }}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
+          </FormControl>
+          {totalPages > 1 && (
             <Pagination
               count={totalPages}
               page={page}
               onChange={(_, newPage) => setPage(newPage)}
               color="primary"
             />
-          </Box>
-        )}
+          )}
+        </Box>
       </Paper>
 
       {/* 编辑/新建对话框 */}

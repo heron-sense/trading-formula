@@ -1,7 +1,7 @@
 // Mock配置和开关
 export const MOCK_CONFIG = {
   // 是否启用Mock模式
-  ENABLE_MOCK: process.env.REACT_APP_USE_MOCK === 'true' || process.env.NODE_ENV === 'development',
+  ENABLE_MOCK: import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.DEV,
   
   // Mock数据配置
   MOCK_DATA: {
@@ -60,19 +60,19 @@ export const getRandomErrorType = (): string => {
 // 环境变量配置
 export const ENV_CONFIG = {
   // API基础URL
-  API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
   
   // 是否启用调试模式
-  DEBUG: process.env.NODE_ENV === 'development',
+  DEBUG: import.meta.env.DEV,
   
   // 是否启用Mock模式
-  USE_MOCK: process.env.REACT_APP_USE_MOCK === 'true',
+  USE_MOCK: import.meta.env.VITE_USE_MOCK === 'true',
   
   // 应用版本
-  VERSION: process.env.REACT_APP_VERSION || '1.0.0',
+  VERSION: import.meta.env.VITE_VERSION || '1.0.0',
   
   // 应用名称
-  APP_NAME: process.env.REACT_APP_NAME || 'HTF Frontend'
+  APP_NAME: import.meta.env.VITE_NAME || 'HTF Frontend'
 };
 
 // 开发环境配置
@@ -101,7 +101,7 @@ export const PROD_CONFIG = {
 
 // 根据环境获取配置
 export const getConfig = () => {
-  return process.env.NODE_ENV === 'production' ? PROD_CONFIG : DEV_CONFIG;
+  return import.meta.env.PROD ? PROD_CONFIG : DEV_CONFIG;
 };
 
 // 导出默认配置

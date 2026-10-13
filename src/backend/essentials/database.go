@@ -6,6 +6,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"xorm.io/xorm"
+	"xorm.io/xorm/names"
 )
 
 var (
@@ -31,10 +32,19 @@ func NewDatabase(dc *DatabaseCredentials) error {
 		fmt.Println(err)
 		return eris.Wrap(err, "new database engine error")
 	}
+	// GonicMapper maps ID -> id (SnakeMapper would wrongly use i_d).
+	engine.SetMapper(names.GonicMapper{})
 
 	return nil
 }
 
 func NewSession(ctx context.Context) *xorm.Session {
 	return engine.NewSession().Context(ctx)
+}
+
+func Sync(beans ...any) error {
+	if engine == nil {
+		return eris.New("database engine is not initialized")
+	}
+	return engine.Sync2(beans...)
 }

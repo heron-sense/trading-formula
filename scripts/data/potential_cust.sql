@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS `potential_cust` (
+  `id` varchar(64) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `email` varchar(128) NOT NULL DEFAULT '',
+  `phone` varchar(32) NOT NULL DEFAULT '',
+  `company` varchar(128) NOT NULL DEFAULT '',
+  `status` varchar(16) NOT NULL DEFAULT 'pending' COMMENT 'active | inactive | pending',
+  `location` varchar(128) NOT NULL DEFAULT '',
+  `registration_date` varchar(32) NOT NULL DEFAULT '',
+  `last_contact` varchar(32) NOT NULL DEFAULT '',
+  `avatar` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_potential_cust_status` (`status`),
+  KEY `idx_potential_cust_name` (`name`),
+  KEY `idx_potential_cust_company` (`company`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='潜在客户';

@@ -33,6 +33,17 @@ func (bd *Body) EmbraceData(data any) *Body {
 	return bd
 }
 
+func (bd *Body) Ok() *Body {
+	bd.detail.Success = true
+	return bd
+}
+
+func (bd *Body) Fail(message string) *Body {
+	bd.detail.Success = false
+	bd.detail.Message = message
+	return bd
+}
+
 func (bd *Body) SetMessage(s string) *Body {
 	bd.detail.Message = s
 	return bd
