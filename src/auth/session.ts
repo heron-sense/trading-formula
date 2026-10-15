@@ -3,15 +3,28 @@ export interface AuthUser {
   name: string;
 }
 
+/** Client/org payload from EdDSA login response */
+export interface AuthClient {
+  id: string;
+  /** Company / client abbreviation (also exposed as cli_abbr by some login payloads) */
+  abbr: string;
+  adm_uid: string;
+  group_name: string;
+  slogan: string;
+  enabled: string;
+}
+
 export interface AuthSession {
   accessToken: string;
   refreshToken: string;
   user: AuthUser;
+  client?: AuthClient | null;
 }
 
 const ACCESS_TOKEN_COOKIE = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'auth_user';
+const CLIENT_KEY = 'auth_client';
 /** Legacy localStorage key; migrate / clear alongside cookie. */
 const LEGACY_ACCESS_TOKEN_KEY = 'auth_token';
 
@@ -57,6 +70,15 @@ export function saveSession(session: AuthSession): void {
   }
   localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(session.user));
+  if (session.client) {
+    localStorage.setItem(CLIENT_KEY, JSON.stringify(session.client));
+  } else {
+    localStorage.removeItem(CLIENT_KEY);
+  }
+  const abbr = session.client?.abbr?.trim();
+  if (abbr) {
+    localStorage.setItem('cli_abbr', abbr);
+  }
   localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
 }
 
@@ -65,6 +87,8 @@ export function clearSession(): void {
   deleteCookie('user_id');
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(CLIENT_KEY);
+  localStorage.removeItem('cli_abbr');
   localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
 }
 
@@ -84,6 +108,24 @@ export function getAuthUser(): AuthUser | null {
   } catch {
     return null;
   }
+}
+
+export function getAuthClient(): AuthClient | null {
+  const raw = localStorage.getItem(CLIENT_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AuthClient;
+  } catch {
+    return null;
+  }
+}
+
+/** cli_abbr from login client (client.abbr / client.cli_abbr) or persisted key */
+export function getSessionCliAbbr(): string {
+  const client = getAuthClient() as (AuthClient & { cli_abbr?: string }) | null;
+  const fromClient = (client?.abbr || client?.cli_abbr || '').trim();
+  if (fromClient) return fromClient;
+  return (localStorage.getItem('cli_abbr') || '').trim();
 }
 
 export function isLoggedIn(): boolean {

@@ -28,6 +28,8 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import CustomerListPage from './pages/business/CustomerListPage';
 import CustomerImportPage from './pages/business/CustomerImportPage';
+import CustLabelManagePage from './pages/business/CustLabelManagePage';
+import CustStatusManagePage from './pages/business/CustStatusManagePage';
 import EmployeeListPage from './pages/business/EmployeeListPage';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import ProductListPage from './pages/business/ProductListPage';
@@ -40,7 +42,8 @@ import StockDiagnosisPage from './pages/marketplace/StockDiagnosisPage';
 import EventsPage from './pages/marketplace/EventsPage';
 import OptionsAnalysisPage from './pages/marketplace/OptionsAnalysisPage';
 import { SidebarState } from './types';
-import { clearSession, getAuthUser, isLoggedIn } from './auth/session';
+import { clearSession, getAuthClient, getAuthUser, isLoggedIn } from './auth/session';
+import { brandingConfig } from './config/branding';
 
 const drawerWidth: number = 280;
 const hiddenWidth: number = 0;
@@ -55,14 +58,24 @@ const App: React.FC = () => {
     () => getAuthUser()?.name || ''
   );
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  /** Bumps when branding changes so Sidebar re-reads singleton config */
+  const [brandingVersion, setBrandingVersion] = useState(() => {
+    if (isLoggedIn()) {
+      brandingConfig.applyFromClient(getAuthClient());
+    }
+    return 0;
+  });
   const open = Boolean(anchorEl);
 
   useEffect(() => {
     if (isLoggedIn()) {
       setIsAuthenticated(true);
       setCurrentUserName(getAuthUser()?.name || '');
+      brandingConfig.applyFromClient(getAuthClient());
+      setBrandingVersion((v) => v + 1);
     } else {
       setIsAuthenticated(false);
+      brandingConfig.resetToDefault();
     }
   }, []);
 
@@ -83,6 +96,8 @@ const App: React.FC = () => {
   };
 
   const handleAuthSuccess = (): void => {
+    brandingConfig.applyFromClient(getAuthClient());
+    setBrandingVersion((v) => v + 1);
     setCurrentUserName(getAuthUser()?.name || '');
     setIsAuthenticated(true);
     setAuthView('login');
@@ -90,6 +105,8 @@ const App: React.FC = () => {
 
   const handleLogout = (): void => {
     clearSession();
+    brandingConfig.resetToDefault();
+    setBrandingVersion((v) => v + 1);
     setCurrentUserName('');
     setIsAuthenticated(false);
     setAuthView('login');
@@ -275,9 +292,10 @@ const App: React.FC = () => {
 
       {/* 侧边栏 */}
       {!isSidebarHidden && (
-        <Sidebar 
-          open={sidebarState === 'open'} 
-          onToggle={handleSidebarToggle} 
+        <Sidebar
+          key={brandingVersion}
+          open={sidebarState === 'open'}
+          onToggle={handleSidebarToggle}
         />
       )}
 
@@ -368,6 +386,44 @@ const App: React.FC = () => {
             }}>
               <Box sx={{ p: 2, flexGrow: 1 }}>
                 <CustomerImportPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/customers/labels" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <CustLabelManagePage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/customers/statuses" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <CustStatusManagePage />
               </Box>
               <Footer />
             </Box>

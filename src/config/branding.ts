@@ -1,3 +1,5 @@
+import type { AuthClient } from '../auth/session';
+
 // 品牌配置
 export interface BrandingConfig {
   logo: {
@@ -81,12 +83,43 @@ export class BrandingConfigManager {
 
   public updateSlogan(sloganText?: string, sloganStyle?: Partial<BrandingConfig['slogan']['style']>): void {
     if (sloganText !== undefined) {
-      // 限制最多3个词语，用空格分隔
-      const words = sloganText.trim().split(/\s+/).slice(0, 3);
-      this.config.slogan.text = words.join(' ');
+      // Prefer space-separated words; also accept Chinese commas as separators
+      const words = sloganText
+        .trim()
+        .split(/[\s,，、]+/)
+        .filter(Boolean)
+        .slice(0, 3);
+      this.config.slogan.text = words.join(' ') || sloganText.trim();
     }
     if (sloganStyle !== undefined) {
       this.config.slogan.style = { ...this.config.slogan.style, ...sloganStyle };
+    }
+  }
+
+  public resetToDefault(): void {
+    this.config = {
+      ...defaultBrandingConfig,
+      logo: { ...defaultBrandingConfig.logo },
+      slogan: {
+        ...defaultBrandingConfig.slogan,
+        style: { ...defaultBrandingConfig.slogan.style },
+      },
+    };
+  }
+
+  /** Apply login client.group_name / client.slogan to navbar branding */
+  public applyFromClient(client: AuthClient | null | undefined): void {
+    if (!client) {
+      this.resetToDefault();
+      return;
+    }
+    const title = (client.group_name || '').trim();
+    const slogan = (client.slogan || '').trim();
+    if (title) {
+      this.updateText(title);
+    }
+    if (slogan) {
+      this.updateSlogan(slogan);
     }
   }
 }

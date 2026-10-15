@@ -2,8 +2,11 @@ package business
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/heron-sense/trading-formula.git/src/backend/essentials"
 	"github.com/rotisserie/eris"
@@ -17,6 +20,12 @@ func NewDelegate() *Delegate {
 	d := &Delegate{}
 	if err := d.ensureTable(); err != nil {
 		log.Printf("potential_cust sync warning: %v", err)
+	}
+	if err := d.ensureCustLabelTable(); err != nil {
+		log.Printf("cust_label sync warning: %v", err)
+	}
+	if err := d.ensureCustStatusTable(); err != nil {
+		log.Printf("cust_status sync warning: %v", err)
 	}
 	if err := d.ensureEmployeeTable(); err != nil {
 		log.Printf("employee sync warning: %v", err)
@@ -44,6 +53,89 @@ func keywordCond(keyword string) builder.Cond {
 	)
 }
 
+func nameCond(name string) builder.Cond {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return builder.NewCond()
+	}
+	return builder.Like{"name", name}
+}
+
+const untaggedFilterSentinel = "__untagged__"
+
+func tagFilterCond(tag string) builder.Cond {
+	tag = strings.TrimSpace(tag)
+	if tag == "" {
+		return builder.NewCond()
+	}
+	if tag == untaggedFilterSentinel {
+		return builder.Expr("tags IS NULL OR JSON_LENGTH(IFNULL(tags, JSON_ARRAY())) = 0")
+	}
+	encoded, err := json.Marshal(tag)
+	if err != nil {
+		return builder.Expr("1 = 0")
+	}
+	// Match JSON array element, e.g. tags contains "VIP"
+	return builder.Expr("JSON_CONTAINS(IFNULL(tags, JSON_ARRAY()), ?, '$')", string(encoded))
+}
+
+func tagsAnyCond(tags []string) builder.Cond {
+	var parts []builder.Cond
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		if t == "" {
+			continue
+		}
+		parts = append(parts, tagFilterCond(t))
+	}
+	if len(parts) == 0 {
+		return builder.NewCond()
+	}
+	if len(parts) == 1 {
+		return parts[0]
+	}
+	return builder.Or(parts...)
+}
+
+func dateRangeCond(column, from, to string) builder.Cond {
+	from = strings.TrimSpace(from)
+	to = strings.TrimSpace(to)
+	cond := builder.NewCond()
+	if from != "" {
+		cond = cond.And(builder.Expr(column+" >= ?", from))
+	}
+	if to != "" {
+		cond = cond.And(builder.Expr(column+" <= ?", to))
+	}
+	return cond
+}
+
+func statusFilterCond(status string) builder.Cond {
+	status = strings.TrimSpace(status)
+	if status == "" {
+		return builder.NewCond()
+	}
+	values := statusMatchValues(status)
+	if len(values) == 1 {
+		return builder.Eq{"status": values[0]}
+	}
+	return builder.In("status", values)
+}
+
+func customerListCond(req ListCustomersRequest) builder.Cond {
+	cond := keywordCond(req.Keyword)
+	cond = cond.And(nameCond(req.Name))
+	if req.Tag != "" {
+		cond = cond.And(tagFilterCond(req.Tag))
+	} else if len(req.Tags) > 0 {
+		cond = cond.And(tagsAnyCond(req.Tags))
+	}
+	cond = cond.And(statusFilterCond(req.Status))
+	cond = cond.And(dateRangeCond("registration_date", req.RegistrationDateFrom, req.RegistrationDateTo))
+	cond = cond.And(dateRangeCond("last_contact", req.LastContactFrom, req.LastContactTo))
+	return cond
+}
+
 func (d *Delegate) ListCustomers(ctx context.Context, req ListCustomersRequest) (items []Customer, total int64, active, pending, inactive int64, err error) {
 	page := req.Page
 	limit := req.Limit
@@ -54,7 +146,7 @@ func (d *Delegate) ListCustomers(ctx context.Context, req ListCustomersRequest) 
 		limit = 10
 	}
 
-	cond := keywordCond(req.Keyword)
+	cond := customerListCond(req)
 
 	countSession := essentials.NewSession(ctx)
 	defer countSession.Close()
@@ -107,15 +199,32 @@ func normalizeCustomer(c *Customer) error {
 	if c.ID == "" {
 		return eris.New("id is required")
 	}
+	c.Status = strings.TrimSpace(c.Status)
 	switch c.Status {
-	case "active", "inactive", "pending", "":
-		if c.Status == "" {
-			c.Status = "pending"
-		}
+	case "active":
+		c.Status = "活跃"
+	case "pending", "":
+		c.Status = "待处理"
+	case "inactive":
+		c.Status = "未激活"
 	default:
-		return eris.Errorf("invalid status: %s", c.Status)
+		if utf8.RuneCountInString(c.Status) > maxCustStatusLen {
+			return eris.Errorf("status must be at most %d characters", maxCustStatusLen)
+		}
 	}
+	c.Summary = truncateRunes(strings.TrimSpace(c.Summary), maxCustomerSummaryLen)
 	return nil
+}
+
+const maxCustomerSummaryLen = 100
+const maxFollowUpContentLen = 500
+
+func truncateRunes(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max])
 }
 
 // BatchUpsertCustomers inserts or updates rows in potential_cust.

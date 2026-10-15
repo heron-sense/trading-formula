@@ -9,8 +9,14 @@ CREATE TABLE IF NOT EXISTS `potential_cust` (
   `registration_date` varchar(32) NOT NULL DEFAULT '',
   `last_contact` varchar(32) NOT NULL DEFAULT '',
   `avatar` varchar(255) NOT NULL DEFAULT '',
+  `tags` json DEFAULT NULL COMMENT '客户标签数组',
+  `summary` varchar(100) NOT NULL DEFAULT '' COMMENT '客户概要（最多100字）',
+  `follow_ups` json DEFAULT NULL COMMENT '跟进记录数组',
+  `owner_id` varchar(64) NOT NULL DEFAULT '' COMMENT '负责人用户ID',
+  `owner_name` varchar(64) NOT NULL DEFAULT '' COMMENT '负责人姓名',
   PRIMARY KEY (`id`),
   KEY `idx_potential_cust_status` (`status`),
   KEY `idx_potential_cust_name` (`name`),
-  KEY `idx_potential_cust_company` (`company`)
+  KEY `idx_potential_cust_company` (`company`),
+  KEY `idx_potential_cust_owner_id` (`owner_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='潜在客户';

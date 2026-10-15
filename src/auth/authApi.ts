@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { AuthSession, AuthUser, saveSession } from './session';
+import { AuthClient, AuthSession, AuthUser, saveSession } from './session';
 import { fingerprintOfPassword } from './passwordFingerprint';
+import { brandingConfig } from '../config/branding';
 
 const AUTH_BASE =
   import.meta.env.VITE_AUTH_BASE_URL || '/api/EdDSA-island';
@@ -22,6 +23,35 @@ interface AuthApiResponse {
   refresh_token?: string;
   token?: string;
   user?: AuthUser;
+  client?: AuthClient & { cli_abbr?: string };
+  /** Some login payloads expose cli_abbr at the top level */
+  cli_abbr?: string;
+}
+
+function normalizeClient(
+  raw: (AuthClient & { cli_abbr?: string }) | undefined,
+  topLevelCliAbbr?: string
+): AuthClient | null {
+  if (!raw || typeof raw !== 'object') {
+    const abbr = (topLevelCliAbbr || '').trim();
+    if (!abbr) return null;
+    return {
+      id: '',
+      abbr,
+      adm_uid: '',
+      group_name: '',
+      slogan: '',
+      enabled: '',
+    };
+  }
+  return {
+    id: String(raw.id ?? ''),
+    abbr: String(raw.abbr || raw.cli_abbr || topLevelCliAbbr || '').trim(),
+    adm_uid: String(raw.adm_uid ?? ''),
+    group_name: String(raw.group_name ?? ''),
+    slogan: String(raw.slogan ?? ''),
+    enabled: String(raw.enabled ?? ''),
+  };
 }
 
 function toSession(data: AuthApiResponse): AuthSession {
@@ -33,6 +63,7 @@ function toSession(data: AuthApiResponse): AuthSession {
     accessToken,
     refreshToken: data.refresh_token || accessToken,
     user: data.user || { id: '', name: '' },
+    client: normalizeClient(data.client, data.cli_abbr),
   };
 }
 
@@ -73,6 +104,7 @@ async function postAuth(path: string, body: AuthRequestBody): Promise<AuthSessio
 
   const session = toSession(data);
   saveSession(session);
+  brandingConfig.applyFromClient(session.client);
   return session;
 }
 

@@ -17,6 +17,13 @@ export interface User {
 export type UserRole = 'admin' | 'user' | 'manager';
 export type UserStatus = 'active' | 'inactive' | 'pending';
 
+/** 客户跟进记录 */
+export interface CustFollowUp {
+  content: string;
+  createdAt: string;
+  createdBy?: string;
+}
+
 // 客户相关类型
 export interface Customer {
   id: string;
@@ -24,13 +31,22 @@ export interface Customer {
   email: string;
   phone: string;
   company: string;
-  status: CustomerStatus;
+  /** 客户状态（来自 cust_status 目录，兼容旧值 active/pending/inactive） */
+  status: CustomerStatus | string;
   location: string;
   registrationDate: string;
   lastContact: string;
   avatar?: string;
   notes?: string;
   tags?: string[];
+  /** 概要，最多 100 字 */
+  summary?: string;
+  /** 跟进记录（最新在前） */
+  followUps?: CustFollowUp[];
+  /** 负责人用户 ID */
+  ownerId?: string;
+  /** 负责人姓名 */
+  ownerName?: string;
 }
 
 export type CustomerStatus = 'active' | 'inactive' | 'pending';

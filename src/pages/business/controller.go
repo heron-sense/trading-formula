@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/heron-sense/trading-formula.git/src/backend/essentials"
@@ -16,6 +17,43 @@ type Controller struct {
 
 func NewController() *Controller {
 	return &Controller{delegate: NewDelegate()}
+}
+
+// CheckOperations handles POST /api/business/check-operations
+// Probes EdDSA ACL for the listed operation codes (token already validated by middleware).
+func (h *Controller) CheckOperations(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req CheckOperationsRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, CheckOperationsResponse{
+			Success:    false,
+			Message:    "Invalid request body: " + err.Error(),
+			Authorized: map[string]bool{},
+		})
+		return
+	}
+
+	token := essentials.ExtractAccessToken(ctx)
+	userID := essentials.ExtractUserID(ctx)
+	out := make(map[string]bool, len(req.Operations))
+	for _, op := range req.Operations {
+		op = strings.TrimSpace(op)
+		if op == "" {
+			continue
+		}
+		result, err := essentials.CallValidate(c, essentials.ValidateRequest{
+			AccessToken:   token,
+			UserID:        userID,
+			OperationCode: op,
+		})
+		out[op] = err == nil && result != nil && result.Validated && result.Authorized
+	}
+
+	ctx.JSON(http.StatusOK, CheckOperationsResponse{
+		Success:    true,
+		Authorized: out,
+	})
 }
 
 // ListCustomers handles GET /api/business/customers
@@ -31,6 +69,37 @@ func (h *Controller) ListCustomers(c context.Context, ctx *app.RequestContext) {
 		if keyword := string(ctx.Query("search")); keyword != "" {
 			req.Keyword = keyword
 		}
+	}
+	if name := string(ctx.Query("name")); name != "" {
+		req.Name = name
+	}
+	if tag := string(ctx.Query("tag")); tag != "" {
+		req.Tag = tag
+	} else if tag := string(ctx.Query("label")); tag != "" {
+		req.Tag = tag
+	}
+	if tags := string(ctx.Query("tags")); tags != "" {
+		for _, part := range strings.Split(tags, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				req.Tags = append(req.Tags, part)
+			}
+		}
+	}
+	if v := string(ctx.Query("registrationDateFrom")); v != "" {
+		req.RegistrationDateFrom = v
+	}
+	if v := string(ctx.Query("registrationDateTo")); v != "" {
+		req.RegistrationDateTo = v
+	}
+	if v := string(ctx.Query("lastContactFrom")); v != "" {
+		req.LastContactFrom = v
+	}
+	if v := string(ctx.Query("lastContactTo")); v != "" {
+		req.LastContactTo = v
+	}
+	if v := string(ctx.Query("status")); v != "" {
+		req.Status = v
 	}
 	if page := string(ctx.Query("page")); page != "" {
 		if p, err := strconv.Atoi(page); err == nil && p > 0 {
@@ -150,7 +219,436 @@ func (h *Controller) ListEmployees(c context.Context, ctx *app.RequestContext) {
 	})
 }
 
+// ListCustLabelStats handles GET /api/business/cust-label-stats?cliAbbr=xxx
+func (h *Controller) ListCustLabelStats(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	stats, totalCust, untagged, err := h.delegate.ListCustLabelStats(c, cliAbbr)
+	if err != nil {
+		status := http.StatusBadRequest
+		if !strings.Contains(err.Error(), "cliAbbr") {
+			status = http.StatusInternalServerError
+		}
+		ctx.JSON(status, CustLabelStatsResponse{
+			Success: false,
+			Message: err.Error(),
+			Data:    []CustLabelStat{},
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, CustLabelStatsResponse{
+		Success:      true,
+		Data:         stats,
+		TotalCust:    totalCust,
+		UntaggedCust: untagged,
+	})
+}
+
+// ListCustLabels handles GET /api/business/cust-labels?cliAbbr=xxx (deduplicated per client).
+func (h *Controller) ListCustLabels(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	labels, err := h.delegate.ListDistinctCustLabels(c, cliAbbr)
+	if err != nil {
+		status := http.StatusBadRequest
+		if !strings.Contains(err.Error(), "cliAbbr") {
+			status = http.StatusInternalServerError
+		}
+		ctx.JSON(status, CustLabelsResponse{
+			Success: false,
+			Message: err.Error(),
+			Data:    []CustLabelItem{},
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, CustLabelsResponse{
+		Success: true,
+		Data:    labels,
+	})
+}
+
+// AddCustLabel handles POST /api/business/cust-label.
+func (h *Controller) AddCustLabel(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req AddCustLabelRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, AddCustLabelResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	result, err := h.delegate.AddCustLabel(c, req.CliAbbr, req.CustID, req.Label, req.Color)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err.Error() == "customer not found" {
+			status = http.StatusNotFound
+		}
+		ctx.JSON(status, AddCustLabelResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, AddCustLabelResponse{
+		Success: true,
+		Message: "label added",
+		CliAbbr: result.CliAbbr,
+		CustID:  strings.TrimSpace(req.CustID),
+		Label:   result.Label,
+		Color:   result.Color,
+		Tags:    result.Tags,
+	})
+}
+
+// DeleteCustLabel handles DELETE /api/business/cust-label?cliAbbr=&label=
+func (h *Controller) DeleteCustLabel(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	label := string(ctx.Query("label"))
+
+	result, err := h.delegate.DeleteCustLabel(c, cliAbbr, label)
+	if err != nil {
+		status := http.StatusBadRequest
+		switch {
+		case err.Error() == "label not found":
+			status = http.StatusNotFound
+		case !strings.Contains(err.Error(), "cliAbbr") &&
+			!strings.Contains(err.Error(), "label"):
+			status = http.StatusInternalServerError
+		}
+		ctx.JSON(status, DeleteCustLabelResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, DeleteCustLabelResponse{
+		Success:              true,
+		Message:              "label deleted",
+		CliAbbr:              result.CliAbbr,
+		Label:                result.Label,
+		RemovedFromCustomers: result.RemovedFromCustomers,
+	})
+}
+
+// ListCustStatusStats handles GET /api/business/cust-status-stats?cliAbbr=
+func (h *Controller) ListCustStatusStats(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	stats, err := h.delegate.ListCustStatusStats(c, cliAbbr)
+	if err != nil {
+		status := http.StatusBadRequest
+		if !strings.Contains(err.Error(), "cliAbbr") {
+			status = http.StatusInternalServerError
+		}
+		ctx.JSON(status, CustStatusStatsResponse{
+			Success: false,
+			Message: err.Error(),
+			Data:    []CustStatusStat{},
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, CustStatusStatsResponse{
+		Success: true,
+		Data:    stats,
+	})
+}
+
+// AddCustStatusDef handles POST /api/business/cust-status-def
+func (h *Controller) AddCustStatusDef(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	var req AddCustStatusRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, AddCustStatusResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+	status, err := h.delegate.AddCustStatus(c, req.CliAbbr, req.Status)
+	if err != nil {
+		code := http.StatusBadRequest
+		ctx.JSON(code, AddCustStatusResponse{Success: false, Message: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, AddCustStatusResponse{
+		Success: true,
+		Message: "status added",
+		CliAbbr: strings.TrimSpace(req.CliAbbr),
+		Status:  status,
+	})
+}
+
+// DeleteCustStatusDef handles DELETE /api/business/cust-status-def?cliAbbr=&status=
+func (h *Controller) DeleteCustStatusDef(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	status := string(ctx.Query("status"))
+	reassignedTo, count, err := h.delegate.DeleteCustStatus(c, cliAbbr, status)
+	if err != nil {
+		code := http.StatusBadRequest
+		if err.Error() == "status not found" {
+			code = http.StatusNotFound
+		}
+		ctx.JSON(code, DeleteCustStatusResponse{Success: false, Message: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, DeleteCustStatusResponse{
+		Success:                 true,
+		Message:                 "status deleted",
+		CliAbbr:                 cliAbbr,
+		Status:                  strings.TrimSpace(status),
+		ReassignedTo:            reassignedTo,
+		ReassignedFromCustomers: count,
+	})
+}
+
+// ListCustStatuses handles GET /api/business/cust-statuses?cliAbbr=
+func (h *Controller) ListCustStatuses(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	statuses, err := h.delegate.ListCustStatuses(c, cliAbbr)
+	if err != nil {
+		status := http.StatusBadRequest
+		if !strings.Contains(err.Error(), "cliAbbr") {
+			status = http.StatusInternalServerError
+		}
+		ctx.JSON(status, CustStatusesResponse{
+			Success: false,
+			Message: err.Error(),
+			Data:    []string{},
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, CustStatusesResponse{
+		Success: true,
+		Data:    statuses,
+	})
+}
+
+// UpdateCustomerStatus handles PUT /api/business/cust-customer-status
+func (h *Controller) UpdateCustomerStatus(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req UpdateCustStatusRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, UpdateCustStatusResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	status, err := h.delegate.UpdateCustomerStatus(c, req.CliAbbr, req.CustID, req.Status)
+	if err != nil {
+		code := http.StatusBadRequest
+		if err.Error() == "customer not found" {
+			code = http.StatusNotFound
+		}
+		ctx.JSON(code, UpdateCustStatusResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, UpdateCustStatusResponse{
+		Success: true,
+		Message: "status updated",
+		CustID:  strings.TrimSpace(req.CustID),
+		Status:  status,
+	})
+}
+
+// UpdateCustProfile handles PUT /api/business/cust-profile
+func (h *Controller) UpdateCustProfile(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req UpdateCustProfileRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, UpdateCustProfileResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	name, phone, email, err := h.delegate.UpdateCustProfile(c, req.CustID, req.Name, req.Phone, req.Email)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err.Error() == "customer not found" {
+			status = http.StatusNotFound
+		}
+		ctx.JSON(status, UpdateCustProfileResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, UpdateCustProfileResponse{
+		Success: true,
+		Message: "profile updated",
+		CustID:  strings.TrimSpace(req.CustID),
+		Name:    name,
+		Phone:   phone,
+		Email:   email,
+	})
+}
+
+// UpdateCustSummary handles PUT /api/business/cust-summary
+func (h *Controller) UpdateCustSummary(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req UpdateCustSummaryRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, UpdateCustSummaryResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	summary, err := h.delegate.UpdateCustSummary(c, req.CustID, req.Summary)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err.Error() == "customer not found" {
+			status = http.StatusNotFound
+		}
+		ctx.JSON(status, UpdateCustSummaryResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, UpdateCustSummaryResponse{
+		Success: true,
+		Message: "summary updated",
+		CustID:  strings.TrimSpace(req.CustID),
+		Summary: summary,
+	})
+}
+
+// AddCustFollowUp handles POST /api/business/cust-follow-up
+func (h *Controller) AddCustFollowUp(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req AddCustFollowUpRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, AddCustFollowUpResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	followUps, err := h.delegate.AddCustFollowUp(c, req.CustID, req.Content, req.CreatedBy, req.CreatedAt)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err.Error() == "customer not found" {
+			status = http.StatusNotFound
+		}
+		ctx.JSON(status, AddCustFollowUpResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, AddCustFollowUpResponse{
+		Success:   true,
+		Message:   "follow-up added",
+		CustID:    strings.TrimSpace(req.CustID),
+		FollowUps: followUps,
+	})
+}
+
 // BatchCreateCustomers handles POST /api/business/customers/batch
+// BatchAssignCustomers handles POST /api/business/customers/batch-assign
+func (h *Controller) BatchAssignCustomers(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req BatchAssignCustomersRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, BatchAssignCustomersResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	updated, ownerID, ownerName, err := h.delegate.BatchAssignCustomers(c, req.CustIDs, req.OwnerID, req.OwnerName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, BatchAssignCustomersResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, BatchAssignCustomersResponse{
+		Success:   true,
+		Message:   "customers assigned",
+		Updated:   updated,
+		OwnerID:   ownerID,
+		OwnerName: ownerName,
+	})
+}
+
+// BatchDeleteCustomers handles POST /api/business/customers/batch-delete
+func (h *Controller) BatchDeleteCustomers(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+
+	var req BatchDeleteCustomersRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, BatchDeleteCustomersResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	deleted, err := h.delegate.BatchDeleteCustomers(c, req.CustIDs)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, BatchDeleteCustomersResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, BatchDeleteCustomersResponse{
+		Success: true,
+		Message: "customers deleted",
+		Deleted: deleted,
+	})
+}
+
 func (h *Controller) BatchCreateCustomers(c context.Context, ctx *app.RequestContext) {
 	setCORS(ctx)
 

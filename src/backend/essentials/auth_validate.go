@@ -82,7 +82,8 @@ func CallValidate(ctx context.Context, req ValidateRequest) (*ValidateResponse, 
 	return &out, nil
 }
 
-func extractAccessToken(ctx *app.RequestContext) string {
+// ExtractAccessToken reads bearer token from Authorization header or access_token cookie.
+func ExtractAccessToken(ctx *app.RequestContext) string {
 	auth := string(ctx.GetHeader("Authorization"))
 	if strings.HasPrefix(strings.ToLower(auth), "bearer ") {
 		return strings.TrimSpace(auth[7:])
@@ -137,7 +138,7 @@ func AuthValidateMiddleware() app.HandlerFunc {
 			return
 		}
 
-		token := extractAccessToken(ctx)
+		token := ExtractAccessToken(ctx)
 		userID := ExtractUserID(ctx)
 		if token == "" || userID == "" {
 			writeAuthError(ctx, http.StatusUnauthorized, "missing access_token or user_id")
@@ -146,6 +147,13 @@ func AuthValidateMiddleware() app.HandlerFunc {
 		}
 
 		op := OperationCode(ctx)
+		path := ctx.FullPath()
+		if path == "" {
+			path = string(ctx.Path())
+		}
+		// Permission probe: only require a valid token; per-op ACL is checked inside the handler.
+		tokenOnly := path == "/api/business/check-operations"
+
 		result, err := CallValidate(c, ValidateRequest{
 			AccessToken:   token,
 			UserID:        userID,
@@ -161,7 +169,7 @@ func AuthValidateMiddleware() app.HandlerFunc {
 			ctx.Abort()
 			return
 		}
-		if !result.Authorized {
+		if !tokenOnly && !result.Authorized {
 			writeAuthError(ctx, http.StatusForbidden, "operation not authorized: "+op)
 			ctx.Abort()
 			return
@@ -169,6 +177,7 @@ func AuthValidateMiddleware() app.HandlerFunc {
 
 		ctx.Set("auth_sub", result.Sub)
 		ctx.Set("auth_user_id", userID)
+		ctx.Set("auth_access_token", token)
 		ctx.Next(c)
 	}
 }
