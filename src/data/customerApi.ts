@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { api } from '../backend/api';
 import type { CustFollowUp, Customer } from '../models';
 
@@ -422,6 +423,85 @@ export async function addCustFollowUp(
     throw new Error(body?.message || '添加跟进记录失败');
   }
   return Array.isArray(body.followUps) ? body.followUps : [];
+}
+
+export interface CreateCustomerInput {
+  name: string;
+  phone?: string;
+  email?: string;
+  company?: string;
+  location?: string;
+  status?: string;
+  summary?: string;
+  tags?: string[];
+}
+
+function todayLocalDate(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function newCustomerId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `cust_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function batchErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    if (typeof data === 'string' && data.trim()) return data;
+    if (data && typeof data === 'object' && 'message' in data) {
+      const message = (data as { message?: string }).message;
+      if (message) return message;
+    }
+    if (
+      error.message &&
+      error.message !== 'Network Error' &&
+      !/^Request failed with status code \d+$/.test(error.message)
+    ) {
+      return error.message;
+    }
+  } else if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+}
+
+/** POST /api/business/customers/batch — persist one new customer. */
+export async function createCustomer(input: CreateCustomerInput): Promise<void> {
+  const name = input.name.trim();
+  if (!name) {
+    throw new Error('姓名不能为空');
+  }
+  const tags = (input.tags ?? []).map((tag) => tag.trim()).filter(Boolean);
+  const customer: Customer = {
+    id: newCustomerId(),
+    name,
+    email: (input.email ?? '').trim(),
+    phone: (input.phone ?? '').trim(),
+    company: (input.company ?? '').trim(),
+    location: (input.location ?? '').trim(),
+    status: (input.status ?? '').trim(),
+    registrationDate: todayLocalDate(),
+    lastContact: '',
+    summary: input.summary?.trim() || undefined,
+    tags: tags.length ? tags : undefined,
+  };
+
+  let result: BatchCreateResult;
+  try {
+    result = await batchCreateCustomers([customer]);
+  } catch (error) {
+    throw new Error(batchErrorMessage(error, '保存客户失败'));
+  }
+  if (!result.success || result.failed > 0 || result.inserted !== 1) {
+    const detail =
+      result.errorSamples?.filter(Boolean).join('\n') || result.message || '保存客户失败';
+    throw new Error(detail);
+  }
 }
 
 export async function batchCreateCustomers(

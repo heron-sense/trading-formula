@@ -35,7 +35,9 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Menu,
   MenuItem,
+  ListItemIcon,
   Radio,
 } from '@mui/material';
 import {
@@ -47,8 +49,10 @@ import {
   LocationOn,
   Email,
   Refresh,
+  PersonAdd,
+  UploadFile,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { Customer } from '../../models';
 import { getAuthUser, getSessionCliAbbr } from '../../auth/session';
 import {
@@ -142,6 +146,9 @@ const emptyFilters: CustomerSearchFilters = {
 
 const CustomerListPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const createdName =
+    (location.state as { createdName?: string } | null)?.createdName?.trim() || '';
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [draftFilters, setDraftFilters] = useState<CustomerSearchFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<CustomerSearchFilters>(emptyFilters);
@@ -196,7 +203,10 @@ const CustomerListPage: React.FC = () => {
   const [employeeKeyword, setEmployeeKeyword] = useState('');
   const [assignEmployeeId, setAssignEmployeeId] = useState('');
   const [batchBusy, setBatchBusy] = useState(false);
-  const [batchMessage, setBatchMessage] = useState<string | null>(null);
+  const [batchMessage, setBatchMessage] = useState<string | null>(
+    createdName ? `已新增客户「${createdName}」` : null
+  );
+  const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
   const [batchError, setBatchError] = useState<string | null>(null);
 
   const nowFollowUpDateTime = () => {
@@ -936,9 +946,13 @@ const CustomerListPage: React.FC = () => {
           }}
         >
           <Button
+            id="add-customer-button"
             variant="contained"
             size="small"
             startIcon={<Add />}
+            aria-haspopup="menu"
+            aria-controls={addMenuAnchor ? 'add-customer-menu' : undefined}
+            aria-expanded={Boolean(addMenuAnchor)}
             sx={{
               borderRadius: 2,
               flexShrink: 0,
@@ -947,10 +961,42 @@ const CustomerListPage: React.FC = () => {
               minHeight: 40,
               px: 2,
             }}
-            onClick={() => navigate('/business/customers/import')}
+            onClick={(event) => setAddMenuAnchor(event.currentTarget)}
           >
             新增客户
           </Button>
+          <Menu
+            id="add-customer-menu"
+            anchorEl={addMenuAnchor}
+            open={Boolean(addMenuAnchor)}
+            onClose={() => setAddMenuAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            PaperProps={{ sx: { minWidth: 168, mt: 0.5 } }}
+          >
+            <MenuItem
+              onClick={() => {
+                setAddMenuAnchor(null);
+                navigate('/business/customers/new');
+              }}
+            >
+              <ListItemIcon>
+                <PersonAdd fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>逐个新增</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setAddMenuAnchor(null);
+                navigate('/business/customers/import');
+              }}
+            >
+              <ListItemIcon>
+                <UploadFile fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>批量上传</ListItemText>
+            </MenuItem>
+          </Menu>
 
           <Box sx={{ flex: '1 1 auto', minWidth: 16 }} />
 

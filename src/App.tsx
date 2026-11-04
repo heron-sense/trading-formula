@@ -28,6 +28,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import CustomerListPage from './pages/business/CustomerListPage';
 import CustomerImportPage from './pages/business/CustomerImportPage';
+import CustomerCreatePage from './pages/business/CustomerCreatePage';
 import CustLabelManagePage from './pages/business/CustLabelManagePage';
 import CustStatusManagePage from './pages/business/CustStatusManagePage';
 import EmployeeListPage from './pages/business/EmployeeListPage';
@@ -367,6 +368,25 @@ const App: React.FC = () => {
             }}>
               <Box sx={{ p: 2, flexGrow: 1 }}>
                 <CustomerListPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/customers/new" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <CustomerCreatePage />
               </Box>
               <Footer />
             </Box>
