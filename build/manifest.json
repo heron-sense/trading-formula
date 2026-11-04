@@ -1,0 +1,15 @@
+{
+  "short_name": "Heron Trading Formula",
+  "name": "Heron Trading Formula - 管理系统",
+  "icons": [
+    {
+      "src": "asset/logo-1.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff"
+}
