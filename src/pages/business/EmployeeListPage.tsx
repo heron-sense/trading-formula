@@ -25,18 +25,43 @@ import {
   Typography,
 } from '@mui/material';
 import { Email, Refresh, Search, Visibility } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { getSessionCliAbbr } from '../../auth/session';
 import {
+  assignEdDSAUserRole,
+  EdDSARole,
   EdDSAUser,
+  fetchEdDSARoles,
   fetchUsersByCliAbbr,
   isUserEnabled,
 } from '../../data/employeeApi';
 
+const ROLE_RULER_COLORS = [
+  '#388e3c',
+  '#f57c00',
+  '#d32f2f',
+  '#1976d2',
+  '#7b1fa2',
+  '#00838f',
+  '#5d4037',
+  '#455a64',
+] as const;
+
 const EmployeeListPage: React.FC = () => {
+  const navigate = useNavigate();
   const cliAbbr = getSessionCliAbbr();
   const [users, setUsers] = useState<EdDSAUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [roles, setRoles] = useState<EdDSARole[]>([]);
+  const [roleByUserId, setRoleByUserId] = useState<Record<string, string>>({});
+  const [rolesError, setRolesError] = useState<string | null>(null);
+  const [assignUser, setAssignUser] = useState<EdDSAUser | null>(null);
+  const [pickedRoleId, setPickedRoleId] = useState('');
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [assignSaving, setAssignSaving] = useState(false);
+  const [assignMessage, setAssignMessage] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -65,20 +90,97 @@ const EmployeeListPage: React.FC = () => {
     }
   }, []);
 
+  const loadRoles = useCallback(async () => {
+    try {
+      const list = await fetchEdDSARoles();
+      setRoles(list);
+      const next: Record<string, string> = {};
+      for (const role of list) {
+        for (const userId of role.userIds) {
+          if (userId) next[userId] = role.name;
+        }
+      }
+      setRoleByUserId(next);
+      setRolesError(null);
+    } catch (err) {
+      setRoles([]);
+      setRoleByUserId({});
+      setRolesError(err instanceof Error ? err.message : '加载角色失败');
+    }
+  }, []);
+
   useEffect(() => {
     void loadUsers();
   }, [loadUsers]);
 
+  useEffect(() => {
+    void loadRoles();
+  }, [loadRoles]);
+
+  const roleOf = useCallback(
+    (userId: string) => roleByUserId[userId] || '',
+    [roleByUserId]
+  );
+
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
-    if (!q) return users;
     return users.filter((u) => {
-      const hay = [u.id, u.name, u.cli_abbr, u.email_addr, u.enabled]
+      if (selectedRole && roleOf(u.id) !== selectedRole) return false;
+      if (!q) return true;
+      const hay = [u.id, u.name, u.cli_abbr, u.email_addr, u.enabled, roleOf(u.id)]
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [users, keyword]);
+  }, [users, keyword, selectedRole, roleOf]);
+
+  const selectRoleFilter = (role: string) => {
+    setPage(0);
+    setSelectedRole((prev) => (prev === role ? '' : role));
+  };
+
+  const roleCount = (role: string) => users.filter((u) => roleOf(u.id) === role).length;
+
+  const openAssign = (user: EdDSAUser) => {
+    const currentName = roleOf(user.id);
+    const current = roles.find((role) => role.name === currentName && role.referenceId);
+    setAssignUser(user);
+    setPickedRoleId(current?.referenceId || '');
+    setAssignError(null);
+    setAssignSaving(false);
+  };
+
+  const closeAssign = () => {
+    if (assignSaving) return;
+    setAssignUser(null);
+    setPickedRoleId('');
+    setAssignError(null);
+  };
+
+  const saveAssign = async () => {
+    if (!assignUser) return;
+    const role = roles.find((item) => item.referenceId === pickedRoleId);
+    if (!role) {
+      setAssignError('请选择角色');
+      return;
+    }
+    setAssignSaving(true);
+    setAssignError(null);
+    try {
+      await assignEdDSAUserRole({
+        roleReferenceId: role.referenceId,
+        userReferenceId: assignUser.reference_id || '',
+      });
+      setRoleByUserId((prev) => ({ ...prev, [assignUser.id]: role.name }));
+      setAssignMessage(`已为「${assignUser.name || assignUser.id}」指定角色「${role.name}」`);
+      setAssignUser(null);
+      setPickedRoleId('');
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : '指定角色失败');
+    } finally {
+      setAssignSaving(false);
+    }
+  };
 
   const total = filtered.length;
   const pageUsers = useMemo(() => {
@@ -142,6 +244,105 @@ const EmployeeListPage: React.FC = () => {
         </Box>
       </Paper>
 
+      {assignMessage && (
+        <Alert severity="success" sx={{ mx: 2, mb: 2 }} onClose={() => setAssignMessage(null)}>
+          {assignMessage}
+        </Alert>
+      )}
+
+      {rolesError && (
+        <Alert severity="warning" sx={{ mx: 2, mb: 2 }} onClose={() => setRolesError(null)}>
+          {rolesError}
+        </Alert>
+      )}
+
+      <Box
+        sx={{
+          display: 'flex',
+          maxWidth: 'calc(100% - 32px)',
+          mx: 2,
+          mb: 2,
+          borderRadius: 1.5,
+          overflowX: 'auto',
+          border: '1px solid',
+          borderColor: 'divider',
+          alignSelf: 'flex-start',
+        }}
+      >
+        <Box
+          onClick={() => selectRoleFilter('')}
+          title={`全部（${users.length}）`}
+          sx={{
+            flex: '0 0 auto',
+            px: 1.5,
+            py: 1,
+            textAlign: 'center',
+            cursor: 'pointer',
+            bgcolor: '#455a64',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: selectedRole === '' ? 700 : 500,
+            filter: selectedRole === '' ? 'none' : 'saturate(0.75) brightness(0.92)',
+            boxShadow: selectedRole === ''
+              ? 'inset 0 0 0 2px rgba(255,255,255,0.95)'
+              : 'inset 0 -2px 0 rgba(0,0,0,0.12)',
+            borderRight: '1px solid rgba(255,255,255,0.35)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          全部（{users.length}）
+        </Box>
+        {roles.map((role, index) => {
+          const selected = selectedRole === role.name;
+          const color = ROLE_RULER_COLORS[index % ROLE_RULER_COLORS.length];
+          const count = roleCount(role.name);
+          return (
+            <Box
+              key={role.referenceId || role.name}
+              onClick={() => selectRoleFilter(role.name)}
+              title={`${role.name}（${count}）`}
+              sx={{
+                flex: '0 0 auto',
+                px: 1.5,
+                py: 1,
+                textAlign: 'center',
+                cursor: 'pointer',
+                bgcolor: color,
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: selected ? 700 : 500,
+                filter: selected ? 'none' : 'saturate(0.75) brightness(0.92)',
+                boxShadow: selected
+                  ? 'inset 0 0 0 2px rgba(255,255,255,0.95)'
+                  : 'inset 0 -2px 0 rgba(0,0,0,0.12)',
+                borderRight: '1px solid rgba(255,255,255,0.35)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {role.name}（{count}）
+            </Box>
+          );
+        })}
+        <Box
+          onClick={() => navigate('/business/employees/roles')}
+          title="角色管理"
+          sx={{
+            flex: '0 0 auto',
+            px: 1.5,
+            py: 1,
+            textAlign: 'center',
+            cursor: 'pointer',
+            bgcolor: 'secondary.main',
+            color: 'secondary.contrastText',
+            fontSize: 13,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          角色管理
+        </Box>
+      </Box>
+
       <Paper
         elevation={2}
         sx={{ borderRadius: 2, mx: 2, mb: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}
@@ -182,6 +383,7 @@ const EmployeeListPage: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600 }}>用户</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>邮箱</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>客户简称</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>角色</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>状态</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>操作</TableCell>
               </TableRow>
@@ -189,8 +391,10 @@ const EmployeeListPage: React.FC = () => {
             <TableBody>
               {!loading && pageUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                    <Typography color="text.secondary">暂无用户数据</Typography>
+                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                    <Typography color="text.secondary">
+                      {selectedRole ? `暂无角色为「${selectedRole}」的员工` : '暂无用户数据'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -223,6 +427,11 @@ const EmployeeListPage: React.FC = () => {
                         <Typography variant="body2">{user.cli_abbr || '-'}</Typography>
                       </TableCell>
                       <TableCell>
+                        <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+                          {roleOf(user.id) || '未分配'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
                         <Chip
                           label={enabled ? '启用' : '禁用'}
                           color={enabled ? 'success' : 'default'}
@@ -231,17 +440,28 @@ const EmployeeListPage: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          title="查看详情"
-                          onClick={() => {
-                            setSelected(user);
-                            setDetailOpen(true);
-                          }}
-                        >
-                          <Visibility />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            title="查看详情"
+                            aria-label={`查看 ${user.name || user.id}`}
+                            onClick={() => {
+                              setSelected(user);
+                              setDetailOpen(true);
+                            }}
+                          >
+                            <Visibility />
+                          </IconButton>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => openAssign(user)}
+                            sx={{ whiteSpace: 'nowrap' }}
+                          >
+                            编辑
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -304,6 +524,12 @@ const EmployeeListPage: React.FC = () => {
                 {selected.email_addr || '-'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
+                角色
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                {roleOf(selected.id) || '未分配'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
                 状态
               </Typography>
               <Chip
@@ -317,6 +543,96 @@ const EmployeeListPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailOpen(false)}>关闭</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(assignUser)} onClose={closeAssign} maxWidth="sm" fullWidth>
+        <DialogTitle>选择角色</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <Typography variant="body2" color="text.secondary">
+            {assignUser?.name || assignUser?.id || '员工'}
+          </Typography>
+          {assignError && (
+            <Alert
+              severity="error"
+              onClose={() => setAssignError(null)}
+              sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+            >
+              {assignError}
+            </Alert>
+          )}
+          {roles.length === 0 ? (
+            <Typography color="text.secondary">暂无可选角色</Typography>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                maxWidth: '100%',
+                borderRadius: 1.5,
+                overflowX: 'auto',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              {roles.map((role, index) => {
+                const selected = pickedRoleId === role.referenceId && role.referenceId !== '';
+                const color = ROLE_RULER_COLORS[index % ROLE_RULER_COLORS.length];
+                return (
+                  <Box
+                    key={role.referenceId || role.name}
+                    role="button"
+                    tabIndex={assignSaving || !role.referenceId ? -1 : 0}
+                    aria-pressed={selected}
+                    aria-label={role.name}
+                    onClick={() => {
+                      if (!assignSaving && role.referenceId) setPickedRoleId(role.referenceId);
+                    }}
+                    onKeyDown={(event) => {
+                      if (assignSaving || !role.referenceId) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setPickedRoleId(role.referenceId);
+                      }
+                    }}
+                    sx={{
+                      flex: '0 0 auto',
+                      px: 1.5,
+                      py: 1,
+                      minHeight: 40,
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: assignSaving || !role.referenceId ? 'default' : 'pointer',
+                      bgcolor: color,
+                      color: '#fff',
+                      fontSize: 13,
+                      fontWeight: selected ? 700 : 500,
+                      filter: selected ? 'none' : 'saturate(0.75) brightness(0.92)',
+                      boxShadow: selected
+                        ? 'inset 0 0 0 2px rgba(255,255,255,0.95)'
+                        : 'inset 0 -2px 0 rgba(0,0,0,0.12)',
+                      borderRight: '1px solid rgba(255,255,255,0.35)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {role.name}
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeAssign} disabled={assignSaving}>
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => void saveAssign()}
+            disabled={assignSaving || !pickedRoleId}
+            startIcon={assignSaving ? <CircularProgress size={16} color="inherit" /> : undefined}
+          >
+            {assignSaving ? '保存中' : '保存'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

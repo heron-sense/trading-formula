@@ -30,6 +30,9 @@ func NewDelegate() *Delegate {
 	if err := d.ensureEmployeeTable(); err != nil {
 		log.Printf("employee sync warning: %v", err)
 	}
+	if err := d.ensureStaffRoleTables(); err != nil {
+		log.Printf("staff_role sync warning: %v", err)
+	}
 	return d
 }
 

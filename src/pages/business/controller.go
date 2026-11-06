@@ -699,3 +699,111 @@ func (h *Controller) BatchCreateCustomers(c context.Context, ctx *app.RequestCon
 		ErrorSamples: samples,
 	})
 }
+
+func queryCliAbbr(ctx *app.RequestContext) string {
+	cliAbbr := string(ctx.Query("cliAbbr"))
+	if cliAbbr == "" {
+		cliAbbr = string(ctx.Query("cli_abbr"))
+	}
+	return cliAbbr
+}
+
+// ListStaffRoles handles GET /api/business/staff-roles?cliAbbr=
+func (h *Controller) ListStaffRoles(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	stats, assignments, err := h.delegate.ListStaffRoles(c, queryCliAbbr(ctx))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, StaffRolesResponse{
+			Success:     false,
+			Message:     err.Error(),
+			Data:        []StaffRoleStat{},
+			Assignments: []StaffRoleAssignment{},
+		})
+		return
+	}
+	if stats == nil {
+		stats = []StaffRoleStat{}
+	}
+	if assignments == nil {
+		assignments = []StaffRoleAssignment{}
+	}
+	ctx.JSON(http.StatusOK, StaffRolesResponse{
+		Success:     true,
+		Data:        stats,
+		Assignments: assignments,
+	})
+}
+
+// AddStaffRole handles POST /api/business/staff-role
+func (h *Controller) AddStaffRole(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	var req AddStaffRoleRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, AddStaffRoleResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+	role, err := h.delegate.AddStaffRole(c, req.CliAbbr, req.Role)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, AddStaffRoleResponse{Success: false, Message: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, AddStaffRoleResponse{
+		Success: true,
+		Message: "role added",
+		CliAbbr: strings.TrimSpace(req.CliAbbr),
+		Role:    role,
+	})
+}
+
+// DeleteStaffRole handles DELETE /api/business/staff-role?cliAbbr=&role=
+func (h *Controller) DeleteStaffRole(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	role := string(ctx.Query("role"))
+	cleared, err := h.delegate.DeleteStaffRole(c, queryCliAbbr(ctx), role)
+	if err != nil {
+		code := http.StatusBadRequest
+		if err.Error() == "role not found" {
+			code = http.StatusNotFound
+		}
+		ctx.JSON(code, DeleteStaffRoleResponse{Success: false, Message: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, DeleteStaffRoleResponse{
+		Success:          true,
+		Message:          "role deleted",
+		CliAbbr:          queryCliAbbr(ctx),
+		Role:             strings.TrimSpace(role),
+		ClearedFromUsers: cleared,
+	})
+}
+
+// UpdateUserStaffRole handles PUT /api/business/user-staff-role
+func (h *Controller) UpdateUserStaffRole(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	var req UpdateUserStaffRoleRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, UpdateUserStaffRoleResponse{
+			Success: false,
+			Message: "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+	role, err := h.delegate.UpdateUserStaffRole(c, req.CliAbbr, req.UserID, req.Role)
+	if err != nil {
+		code := http.StatusBadRequest
+		if err.Error() == "role not found" {
+			code = http.StatusNotFound
+		}
+		ctx.JSON(code, UpdateUserStaffRoleResponse{Success: false, Message: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, UpdateUserStaffRoleResponse{
+		Success: true,
+		Message: "role updated",
+		UserID:  strings.TrimSpace(req.UserID),
+		Role:    role,
+	})
+}

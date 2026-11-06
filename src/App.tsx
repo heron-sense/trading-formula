@@ -32,6 +32,7 @@ import CustomerCreatePage from './pages/business/CustomerCreatePage';
 import CustLabelManagePage from './pages/business/CustLabelManagePage';
 import CustStatusManagePage from './pages/business/CustStatusManagePage';
 import EmployeeListPage from './pages/business/EmployeeListPage';
+import RoleManagePage from './pages/business/RoleManagePage';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import ProductListPage from './pages/business/ProductListPage';
 import StockAnalysisPage from './pages/analytics/StockAnalysisPage';
@@ -463,6 +464,25 @@ const App: React.FC = () => {
             }}>
               <Box sx={{ p: 2, flexGrow: 1 }}>
                 <EmployeeListPage />
+              </Box>
+              <Footer />
+            </Box>
+          } />
+          <Route path="/business/employees/roles" element={
+            <Box sx={{ 
+              position: 'fixed',
+              top: 64,
+              left: getSidebarWidth(),
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#f5f5f5',
+              overflow: 'auto',
+              transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ p: 2, flexGrow: 1 }}>
+                <RoleManagePage />
               </Box>
               <Footer />
             </Box>

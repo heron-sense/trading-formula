@@ -4,19 +4,12 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="feat: 实现注册功能">
+    <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="feat: add release/v-0.0.2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/data/potential_cust.sql" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/data/potential_cust.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/auth/authApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/auth/authApi.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/auth/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/auth/session.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config/branding.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/branding.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data/customerApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/customerApi.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/data/employeeApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/employeeApi.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/business/CustomerListPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/CustomerListPage.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/business/EmployeeListPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/EmployeeListPage.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/business/controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/controller.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/business/customer.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/customer.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/business/delegate.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/delegate.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/business/register.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/register.go" afterDir="false" />
     </list>
@@ -50,38 +43,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "Go 构建.go build main.go (1).executor": "Run",
-    "Go 构建.go build main.go.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.GoLinterPluginOnboarding": "true",
-    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "V_FMT": "true",
-    "Zig build.Build and Run.executor": "Run",
-    "git-widget-placeholder": "main",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/admin/GolandProjects/trading-formula/src/pages/marketplace",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "ts.external.directory.path": "/Users/admin/GolandProjects/trading-formula/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;Go 构建.go build main.go (1).executor&quot;: &quot;Run&quot;,
+    &quot;Go 构建.go build main.go.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.GoLinterPluginOnboarding&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.GoLinterPluginStorageMigration&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;V_FMT&quot;: &quot;true&quot;,
+    &quot;Zig build.Build and Run.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/admin/GolandProjects/trading-formula/src/pages/marketplace&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/admin/GolandProjects/trading-formula/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/pages/marketplace" />
@@ -115,12 +108,9 @@
     </configuration>
     <configuration name="Build and Run" type="ZIGBRAINS_BUILD" factoryName="ZIGBRAINS_BUILD" temporary="true">
       <ZigBrainsOption name="workingDirectory" value="$PROJECT_DIR$" />
+      <envs />
       <ZigBrainsOption name="buildSteps" value="run" />
       <ZigBrainsOption name="compilerArgs" value="" />
-      <ZigBrainsOption name="debugBuildSteps" value="" />
-      <ZigBrainsOption name="debugCompilerArgs" value="" />
-      <ZigBrainsOption name="exePath" value="" />
-      <ZigBrainsOption name="exeArgs" value="" />
       <method v="2" />
     </configuration>
   </component>
@@ -155,6 +145,7 @@
       <workItem from="1763549797471" duration="39000" />
       <workItem from="1763549847025" duration="389000" />
       <workItem from="1791872232540" duration="1288000" />
+      <workItem from="1793771761148" duration="2984000" />
     </task>
     <task id="LOCAL-00001" summary="feat: 实现注册功能">
       <option name="closed" value="true" />
@@ -164,7 +155,23 @@
       <option name="project" value="LOCAL" />
       <updated>1791872291817</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat: 支持单个添加客户">
+      <option name="closed" value="true" />
+      <created>1793771787169</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1793771787169</updated>
+    </task>
+    <task id="LOCAL-00003" summary="feat: add release/v-0.0.2">
+      <option name="closed" value="true" />
+      <created>1793772656761</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1793772656761</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -174,12 +181,25 @@
     <option name="srcBased" value="true" />
   </component>
   <component name="V Toolchain" url="$USER_HOME$/v" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Changes" />
     <MESSAGE value="feat: add events page" />
     <MESSAGE value="feat: add backend" />
     <MESSAGE value="feat: 实现注册功能" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: 实现注册功能" />
+    <MESSAGE value="feat: 支持单个添加客户" />
+    <MESSAGE value="feat: add release/v-0.0.2" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add release/v-0.0.2" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
