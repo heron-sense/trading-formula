@@ -101,6 +101,12 @@ func (h *Controller) ListCustomers(c context.Context, ctx *app.RequestContext) {
 	if v := string(ctx.Query("status")); v != "" {
 		req.Status = v
 	}
+	if v := string(ctx.Query("roleId")); v != "" {
+		req.RoleID = v
+	}
+	if v := string(ctx.Query("assigneeScope")); v != "" {
+		req.AssigneeScope = v
+	}
 	if page := string(ctx.Query("page")); page != "" {
 		if p, err := strconv.Atoi(page); err == nil && p > 0 {
 			req.Page = p
@@ -157,6 +163,29 @@ func authUserID(ctx *app.RequestContext) string {
 		}
 	}
 	return essentials.ExtractUserID(ctx)
+}
+
+// ListAssigneeStats handles GET /api/business/customer-assignee-stats?roleId=
+func (h *Controller) ListAssigneeStats(c context.Context, ctx *app.RequestContext) {
+	setCORS(ctx)
+	total, unassigned, items, err := h.delegate.CountVisibleAssignees(c, string(ctx.Query("roleId")))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, AssigneeStatsResponse{
+			Success: false,
+			Message: err.Error(),
+			Items:   []AssigneeStat{},
+		})
+		return
+	}
+	if items == nil {
+		items = []AssigneeStat{}
+	}
+	ctx.JSON(http.StatusOK, AssigneeStatsResponse{
+		Success:    true,
+		Total:      total,
+		Unassigned: unassigned,
+		Items:      items,
+	})
 }
 
 // ListEmployees handles GET /api/business/employees (current user's company only).
@@ -602,7 +631,7 @@ func (h *Controller) BatchAssignCustomers(c context.Context, ctx *app.RequestCon
 		return
 	}
 
-	updated, ownerID, ownerName, err := h.delegate.BatchAssignCustomers(c, req.CustIDs, req.OwnerID, req.OwnerName)
+	updated, assignee, err := h.delegate.BatchAssignCustomers(c, req.CustIDs, req.Assignee)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, BatchAssignCustomersResponse{
 			Success: false,
@@ -612,11 +641,10 @@ func (h *Controller) BatchAssignCustomers(c context.Context, ctx *app.RequestCon
 	}
 
 	ctx.JSON(http.StatusOK, BatchAssignCustomersResponse{
-		Success:   true,
-		Message:   "customers assigned",
-		Updated:   updated,
-		OwnerID:   ownerID,
-		OwnerName: ownerName,
+		Success:  true,
+		Message:  "customers assigned",
+		Updated:  updated,
+		Assignee: assignee,
 	})
 }
 

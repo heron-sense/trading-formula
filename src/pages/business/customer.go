@@ -16,8 +16,7 @@ type PotentialCust struct {
 	Tags             []string       `xorm:"json 'tags'" json:"tags,omitempty"`
 	Summary          string         `xorm:"varchar(100) 'summary'" json:"summary,omitempty"`
 	FollowUps        []CustFollowUp `xorm:"json 'follow_ups'" json:"followUps,omitempty"`
-	OwnerID          string         `xorm:"varchar(64) index 'owner_id'" json:"ownerId,omitempty"`
-	OwnerName        string         `xorm:"varchar(64) 'owner_name'" json:"ownerName,omitempty"`
+	Assignee         string         `xorm:"varchar(64) index 'assignee'" json:"assignee,omitempty"`
 }
 
 // CustFollowUp is one follow-up note on a customer.
@@ -45,8 +44,28 @@ type ListCustomersRequest struct {
 	LastContactFrom      string
 	LastContactTo        string
 	Status               string // catalog status name (matches legacy codes too)
+	RoleID               string // current employee's single role id; list keeps this assignee or an empty one
+	AssigneeScope        string // empty = no extra filter; __all_roles__ = unassigned; otherwise one role id
 	Page                 int
 	Limit                int
+}
+
+// allRolesAssigneeScope selects rows whose assignee is empty.
+const allRolesAssigneeScope = "__all_roles__"
+
+// AssigneeStat is one assignee value and how many visible customers use it.
+type AssigneeStat struct {
+	Assignee string `json:"assignee"`
+	Count    int64  `json:"count"`
+}
+
+// AssigneeStatsResponse is GET /api/business/customer-assignee-stats.
+type AssigneeStatsResponse struct {
+	Success    bool           `json:"success"`
+	Message    string         `json:"message,omitempty"`
+	Total      int64          `json:"total"`
+	Unassigned int64          `json:"unassigned"`
+	Items      []AssigneeStat `json:"items"`
 }
 
 // CustomerListResponse matches the marketplace list response shape.

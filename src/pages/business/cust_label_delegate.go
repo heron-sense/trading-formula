@@ -122,36 +122,25 @@ func (d *Delegate) ListCustLabelStats(ctx context.Context, rawCliAbbr string) (s
 		return nil, 0, 0, eris.Wrap(err, "count untagged potential_cust")
 	}
 
-	type row struct {
-		Label string `xorm:"label"`
-		Color string `xorm:"color"`
-		Count int64  `xorm:"cnt"`
-	}
-	rows := make([]row, 0)
-	err = session.SQL(`
-		SELECT l.label AS label,
-		       l.color AS color,
-		       COUNT(c.id) AS cnt
-		FROM cust_label l
-		LEFT JOIN potential_cust c
-		  ON JSON_CONTAINS(IFNULL(c.tags, JSON_ARRAY()), JSON_QUOTE(l.label), '$')
-		WHERE l.cli_abbr = ?
-		GROUP BY l.label, l.color
-		ORDER BY l.label ASC
-	`, cliAbbr).Find(&rows)
+	catalog, err := d.ListDistinctCustLabels(ctx, cliAbbr)
 	if err != nil {
-		return nil, 0, 0, eris.Wrap(err, "list cust label stats")
+		return nil, 0, 0, err
 	}
 
-	stats = make([]CustLabelStat, 0, len(rows))
-	for _, r := range rows {
-		if r.Label == "" {
-			continue
+	stats = make([]CustLabelStat, 0, len(catalog))
+	for _, item := range catalog {
+		encoded, merr := json.Marshal(item.Label)
+		if merr != nil {
+			return nil, 0, 0, eris.Wrap(merr, "encode label")
+		}
+		n, cerr := session.Where("JSON_CONTAINS(IFNULL(tags, JSON_ARRAY()), ?, '$')", string(encoded)).Count(new(PotentialCust))
+		if cerr != nil {
+			return nil, 0, 0, eris.Wrap(cerr, "count potential_cust by label")
 		}
 		stats = append(stats, CustLabelStat{
-			Label: r.Label,
-			Color: labelColorOrDefault(r.Color),
-			Count: r.Count,
+			Label: item.Label,
+			Color: item.Color,
+			Count: n,
 		})
 	}
 	return stats, totalCust, untagged, nil

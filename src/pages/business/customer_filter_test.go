@@ -7,6 +7,64 @@ import (
 	"xorm.io/builder"
 )
 
+func TestCustomerListCond_Assignee(t *testing.T) {
+	empty := customerListCond(ListCustomersRequest{})
+	sql, args, err := builder.ToSQL(empty)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "assignee = ''") || !strings.Contains(sql, "assignee IS NULL") {
+		t.Fatalf("expected empty assignee filter, got %q", sql)
+	}
+	if len(args) != 0 {
+		t.Fatalf("empty role should not add args, got %#v", args)
+	}
+
+	scoped := customerListCond(ListCustomersRequest{RoleID: "04FxowNH1n2CAAux9y6Odh"})
+	sql, args, err = builder.ToSQL(scoped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "assignee = ?") || !strings.Contains(sql, "assignee = ''") {
+		t.Fatalf("expected role-or-empty assignee filter, got %q", sql)
+	}
+	if len(args) != 1 || args[0] != "04FxowNH1n2CAAux9y6Odh" {
+		t.Fatalf("unexpected args: %#v", args)
+	}
+}
+
+func TestCustomerListCond_AssigneeScope(t *testing.T) {
+	allRoles := customerListCond(ListCustomersRequest{
+		RoleID:        "role-a",
+		AssigneeScope: allRolesAssigneeScope,
+	})
+	sql, args, err := builder.ToSQL(allRoles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(sql, "assignee = ''") < 2 || !strings.Contains(sql, "assignee IS NULL") {
+		t.Fatalf("expected visibility plus empty-assignee filter, got %q", sql)
+	}
+	if len(args) != 1 || args[0] != "role-a" {
+		t.Fatalf("unexpected args: %#v", args)
+	}
+
+	oneRole := customerListCond(ListCustomersRequest{
+		RoleID:        "role-a",
+		AssigneeScope: "role-b",
+	})
+	sql, args, err = builder.ToSQL(oneRole)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "assignee = ?") || !strings.Contains(sql, "assignee=?") {
+		t.Fatalf("expected viewer role and selected role, got %q", sql)
+	}
+	if len(args) != 2 || args[0] != "role-a" || args[1] != "role-b" {
+		t.Fatalf("unexpected args: %#v", args)
+	}
+}
+
 func TestCustomerListCond_Name(t *testing.T) {
 	cond := customerListCond(ListCustomersRequest{Name: "张三"})
 	sql, args, err := builder.ToSQL(cond)

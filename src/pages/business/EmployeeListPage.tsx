@@ -10,7 +10,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   IconButton,
   InputAdornment,
   Paper,
@@ -24,7 +23,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Email, Refresh, Search, Visibility } from '@mui/icons-material';
+import { Edit, Email, Refresh, Search } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getSessionCliAbbr } from '../../auth/session';
 import {
@@ -32,8 +31,9 @@ import {
   EdDSARole,
   EdDSAUser,
   fetchEdDSARoles,
-  fetchUsersByCliAbbr,
-  isUserEnabled,
+  fetchEdDSAUserList,
+  mergeEdDSARoles,
+  resolveRoleNames,
 } from '../../data/employeeApi';
 
 const ROLE_RULER_COLORS = [
@@ -47,6 +47,45 @@ const ROLE_RULER_COLORS = [
   '#455a64',
 ] as const;
 
+const UNASSIGNED_ROLE_COLOR = '#607d8b';
+
+const roleFilterButtonSx = (bgcolor: string, selected: boolean) => ({
+  flex: '0 0 auto',
+  px: 1.5,
+  py: 1,
+  textAlign: 'center' as const,
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 500,
+  borderRight: '1px solid rgba(0,0,0,0.12)',
+  whiteSpace: 'nowrap' as const,
+  ...(selected
+    ? {
+        bgcolor,
+        color: '#fff',
+      }
+    : {
+        color: '#212121',
+        backgroundColor: '#fff',
+        backgroundImage: `linear-gradient(45deg, ${bgcolor} 25%, transparent 25%), linear-gradient(-45deg, ${bgcolor} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${bgcolor} 75%), linear-gradient(-45deg, transparent 75%, ${bgcolor} 75%)`,
+        backgroundSize: '2px 2px',
+        backgroundPosition: '0 0, 0 1px, 1px -1px, -1px 0',
+      }),
+});
+
+const roleChipSx = (color: string) => ({
+  maxWidth: 140,
+  height: 24,
+  borderColor: color,
+  color,
+  bgcolor: `${color}14`,
+  '& .MuiChip-label': {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    px: 1,
+  },
+});
+
 const EmployeeListPage: React.FC = () => {
   const navigate = useNavigate();
   const cliAbbr = getSessionCliAbbr();
@@ -55,7 +94,6 @@ const EmployeeListPage: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [roles, setRoles] = useState<EdDSARole[]>([]);
-  const [roleByUserId, setRoleByUserId] = useState<Record<string, string>>({});
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [assignUser, setAssignUser] = useState<EdDSAUser | null>(null);
   const [pickedRoleId, setPickedRoleId] = useState('');
@@ -66,8 +104,6 @@ const EmployeeListPage: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<EdDSAUser | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   const loadUsers = useCallback(async () => {
     const abbr = getSessionCliAbbr();
@@ -80,8 +116,9 @@ const EmployeeListPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const list = await fetchUsersByCliAbbr(abbr);
+      const { users: list, roles: embedded } = await fetchEdDSAUserList(abbr);
       setUsers(list);
+      setRoles((prev) => mergeEdDSARoles(embedded, prev));
     } catch (err) {
       setUsers([]);
       setError(err instanceof Error ? err.message : '加载员工列表失败');
@@ -93,18 +130,9 @@ const EmployeeListPage: React.FC = () => {
   const loadRoles = useCallback(async () => {
     try {
       const list = await fetchEdDSARoles();
-      setRoles(list);
-      const next: Record<string, string> = {};
-      for (const role of list) {
-        for (const userId of role.userIds) {
-          if (userId) next[userId] = role.name;
-        }
-      }
-      setRoleByUserId(next);
+      setRoles((prev) => mergeEdDSARoles(list, prev));
       setRolesError(null);
     } catch (err) {
-      setRoles([]);
-      setRoleByUserId({});
       setRolesError(err instanceof Error ? err.message : '加载角色失败');
     }
   }, []);
@@ -117,33 +145,50 @@ const EmployeeListPage: React.FC = () => {
     void loadRoles();
   }, [loadRoles]);
 
-  const roleOf = useCallback(
-    (userId: string) => roleByUserId[userId] || '',
-    [roleByUserId]
+  const roleNamesByUserId = useMemo(() => {
+    const next: Record<string, string[]> = {};
+    for (const user of users) {
+      next[user.id] = resolveRoleNames(user.roleIds, roles);
+    }
+    return next;
+  }, [users, roles]);
+
+  const roleNamesOf = useCallback(
+    (userId: string) => roleNamesByUserId[userId] ?? [],
+    [roleNamesByUserId]
+  );
+
+  const roleColor = useCallback(
+    (name: string) => {
+      const index = roles.findIndex((role) => role.name === name);
+      if (index < 0) return UNASSIGNED_ROLE_COLOR;
+      return ROLE_RULER_COLORS[index % ROLE_RULER_COLORS.length];
+    },
+    [roles]
   );
 
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     return users.filter((u) => {
-      if (selectedRole && roleOf(u.id) !== selectedRole) return false;
+      const names = roleNamesOf(u.id);
+      if (selectedRole && !names.includes(selectedRole)) return false;
       if (!q) return true;
-      const hay = [u.id, u.name, u.cli_abbr, u.email_addr, u.enabled, roleOf(u.id)]
+      const hay = [u.id, u.name, u.cli_abbr, u.email_addr, u.enabled, ...names]
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [users, keyword, selectedRole, roleOf]);
+  }, [users, keyword, selectedRole, roleNamesOf]);
 
   const selectRoleFilter = (role: string) => {
     setPage(0);
     setSelectedRole((prev) => (prev === role ? '' : role));
   };
 
-  const roleCount = (role: string) => users.filter((u) => roleOf(u.id) === role).length;
+  const roleCount = (role: string) => users.filter((u) => roleNamesOf(u.id).includes(role)).length;
 
   const openAssign = (user: EdDSAUser) => {
-    const currentName = roleOf(user.id);
-    const current = roles.find((role) => role.name === currentName && role.referenceId);
+    const current = roles.find((role) => role.referenceId && user.roleIds.includes(role.referenceId));
     setAssignUser(user);
     setPickedRoleId(current?.referenceId || '');
     setAssignError(null);
@@ -171,7 +216,11 @@ const EmployeeListPage: React.FC = () => {
         roleReferenceId: role.referenceId,
         userReferenceId: assignUser.reference_id || '',
       });
-      setRoleByUserId((prev) => ({ ...prev, [assignUser.id]: role.name }));
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === assignUser.id ? { ...user, roleIds: [role.referenceId] } : user
+        )
+      );
       setAssignMessage(`已为「${assignUser.name || assignUser.id}」指定角色「${role.name}」`);
       setAssignUser(null);
       setPickedRoleId('');
@@ -272,23 +321,7 @@ const EmployeeListPage: React.FC = () => {
         <Box
           onClick={() => selectRoleFilter('')}
           title={`全部（${users.length}）`}
-          sx={{
-            flex: '0 0 auto',
-            px: 1.5,
-            py: 1,
-            textAlign: 'center',
-            cursor: 'pointer',
-            bgcolor: '#455a64',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: selectedRole === '' ? 700 : 500,
-            filter: selectedRole === '' ? 'none' : 'saturate(0.75) brightness(0.92)',
-            boxShadow: selectedRole === ''
-              ? 'inset 0 0 0 2px rgba(255,255,255,0.95)'
-              : 'inset 0 -2px 0 rgba(0,0,0,0.12)',
-            borderRight: '1px solid rgba(255,255,255,0.35)',
-            whiteSpace: 'nowrap',
-          }}
+          sx={roleFilterButtonSx('#455a64', selectedRole === '')}
         >
           全部（{users.length}）
         </Box>
@@ -301,23 +334,7 @@ const EmployeeListPage: React.FC = () => {
               key={role.referenceId || role.name}
               onClick={() => selectRoleFilter(role.name)}
               title={`${role.name}（${count}）`}
-              sx={{
-                flex: '0 0 auto',
-                px: 1.5,
-                py: 1,
-                textAlign: 'center',
-                cursor: 'pointer',
-                bgcolor: color,
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: selected ? 700 : 500,
-                filter: selected ? 'none' : 'saturate(0.75) brightness(0.92)',
-                boxShadow: selected
-                  ? 'inset 0 0 0 2px rgba(255,255,255,0.95)'
-                  : 'inset 0 -2px 0 rgba(0,0,0,0.12)',
-                borderRight: '1px solid rgba(255,255,255,0.35)',
-                whiteSpace: 'nowrap',
-              }}
+              sx={roleFilterButtonSx(color, selected)}
             >
               {role.name}（{count}）
             </Box>
@@ -326,18 +343,11 @@ const EmployeeListPage: React.FC = () => {
         <Box
           onClick={() => navigate('/business/employees/roles')}
           title="角色管理"
-          sx={{
-            flex: '0 0 auto',
-            px: 1.5,
-            py: 1,
-            textAlign: 'center',
-            cursor: 'pointer',
-            bgcolor: 'secondary.main',
-            color: 'secondary.contrastText',
-            fontSize: 13,
+          sx={(theme) => ({
+            ...roleFilterButtonSx(theme.palette.secondary.main, false),
+            borderRight: 'none',
             fontWeight: 600,
-            whiteSpace: 'nowrap',
-          }}
+          })}
         >
           角色管理
         </Box>
@@ -384,23 +394,19 @@ const EmployeeListPage: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600 }}>邮箱</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>客户简称</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>角色</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>状态</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {!loading && pageUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
                     <Typography color="text.secondary">
                       {selectedRole ? `暂无角色为「${selectedRole}」的员工` : '暂无用户数据'}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                pageUsers.map((user) => {
-                  const enabled = isUserEnabled(user.enabled);
-                  return (
+                pageUsers.map((user) => (
                     <TableRow key={user.id} hover>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -427,45 +433,46 @@ const EmployeeListPage: React.FC = () => {
                         <Typography variant="body2">{user.cli_abbr || '-'}</Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
-                          {roleOf(user.id) || '未分配'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={enabled ? '启用' : '禁用'}
-                          color={enabled ? 'success' : 'default'}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 0.5,
+                            minWidth: 0,
+                          }}
+                        >
+                          {roleNamesOf(user.id).length === 0 ? (
+                            <Chip
+                              label="未分配"
+                              size="small"
+                              variant="outlined"
+                              sx={roleChipSx(UNASSIGNED_ROLE_COLOR)}
+                            />
+                          ) : (
+                            roleNamesOf(user.id).map((name) => (
+                              <Chip
+                                key={name}
+                                label={name}
+                                size="small"
+                                variant="outlined"
+                                title={name}
+                                sx={roleChipSx(roleColor(name))}
+                              />
+                            ))
+                          )}
                           <IconButton
                             size="small"
-                            color="primary"
-                            title="查看详情"
-                            aria-label={`查看 ${user.name || user.id}`}
-                            onClick={() => {
-                              setSelected(user);
-                              setDetailOpen(true);
-                            }}
-                          >
-                            <Visibility />
-                          </IconButton>
-                          <Button
-                            size="small"
-                            variant="outlined"
+                            aria-label={`编辑 ${user.name || user.id} 的角色`}
                             onClick={() => openAssign(user)}
-                            sx={{ whiteSpace: 'nowrap' }}
+                            sx={{ flex: '0 0 auto', color: 'text.secondary' }}
                           >
-                            编辑
-                          </Button>
+                            <Edit fontSize="small" />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
-                  );
-                })
+                ))
               )}
             </TableBody>
           </Table>
@@ -486,65 +493,6 @@ const EmployeeListPage: React.FC = () => {
           labelDisplayedRows={({ from, to, count }) => `第 ${from}-${to} 条，共 ${count} 条`}
         />
       </Paper>
-
-      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-              {(selected?.name || '?').charAt(0)}
-            </Avatar>
-            <Box>
-              <Typography variant="h6">{selected?.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                用户详情
-              </Typography>
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {selected && (
-            <Box sx={{ pt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                ID
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {selected.id || '-'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                客户简称
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {selected.cli_abbr || '-'}
-              </Typography>
-              <Divider sx={{ my: 1 }} />
-              <Typography variant="body2" color="text.secondary">
-                邮箱
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {selected.email_addr || '-'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                角色
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {roleOf(selected.id) || '未分配'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                状态
-              </Typography>
-              <Chip
-                label={isUserEnabled(selected.enabled) ? '启用' : '禁用'}
-                color={isUserEnabled(selected.enabled) ? 'success' : 'default'}
-                size="small"
-                sx={{ mt: 0.5 }}
-              />
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailOpen(false)}>关闭</Button>
-        </DialogActions>
-      </Dialog>
 
       <Dialog open={Boolean(assignUser)} onClose={closeAssign} maxWidth="sm" fullWidth>
         <DialogTitle>选择角色</DialogTitle>

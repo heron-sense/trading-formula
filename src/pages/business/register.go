@@ -8,6 +8,7 @@ func Register(group *route.RouterGroup) {
 	handler := NewController()
 	group.POST("/api/business/check-operations", handler.CheckOperations)
 	group.GET("/api/business/customers", handler.ListCustomers)
+	group.GET("/api/business/customer-assignee-stats", handler.ListAssigneeStats)
 	group.POST("/api/business/customers/batch", handler.BatchCreateCustomers)
 	group.POST("/api/business/customers/batch-assign", handler.BatchAssignCustomers)
 	group.POST("/api/business/customers/batch-delete", handler.BatchDeleteCustomers)

@@ -1,19 +1,18 @@
 package business
 
 // BatchAssignCustomersRequest is POST /api/business/customers/batch-assign body.
+// Assignee is the target employee's single role id.
 type BatchAssignCustomersRequest struct {
-	CustIDs   []string `json:"custIds"`
-	OwnerID   string   `json:"ownerId"`
-	OwnerName string   `json:"ownerName"`
+	CustIDs  []string `json:"custIds"`
+	Assignee string   `json:"assignee"`
 }
 
 // BatchAssignCustomersResponse is POST /api/business/customers/batch-assign payload.
 type BatchAssignCustomersResponse struct {
-	Success   bool   `json:"success"`
-	Message   string `json:"message,omitempty"`
-	Updated   int    `json:"updated"`
-	OwnerID   string `json:"ownerId,omitempty"`
-	OwnerName string `json:"ownerName,omitempty"`
+	Success  bool   `json:"success"`
+	Message  string `json:"message,omitempty"`
+	Updated  int    `json:"updated"`
+	Assignee string `json:"assignee,omitempty"`
 }
 
 // BatchDeleteCustomersRequest is POST /api/business/customers/batch-delete body.

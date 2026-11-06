@@ -36,6 +36,8 @@ export async function fetchCustomers(params: {
   lastContactFrom?: string;
   lastContactTo?: string;
   status?: string;
+  roleId?: string;
+  assigneeScope?: string;
 }): Promise<CustomerListResult> {
   const response = await api.get<CustomerListApiResponse>('/business/customers', {
     params: {
@@ -50,6 +52,8 @@ export async function fetchCustomers(params: {
       lastContactFrom: params.lastContactFrom || undefined,
       lastContactTo: params.lastContactTo || undefined,
       status: params.status || undefined,
+      roleId: params.roleId || undefined,
+      assigneeScope: params.assigneeScope || undefined,
     },
   });
 
@@ -143,6 +147,45 @@ interface CustLabelStatsApiResponse {
 }
 
 /** GET /api/business/cust-label-stats?cliAbbr= — customer counts per label */
+/** Empty assignee: visible to every role. */
+export const ALL_ROLES_ASSIGNEE_SCOPE = '__all_roles__';
+
+export interface AssigneeStatsResult {
+  total: number;
+  unassigned: number;
+  counts: Record<string, number>;
+}
+
+interface AssigneeStatsApiResponse {
+  success: boolean;
+  message?: string;
+  total?: number;
+  unassigned?: number;
+  items?: { assignee?: string; count?: number }[];
+}
+
+/** GET /api/business/customer-assignee-stats — counts inside the employee's visible set. */
+export async function fetchAssigneeStats(roleId?: string): Promise<AssigneeStatsResult> {
+  const response = await api.get<AssigneeStatsApiResponse>('/business/customer-assignee-stats', {
+    params: { roleId: roleId || undefined },
+  });
+  const body = response.data;
+  if (!body?.success) {
+    throw new Error(body?.message || '获取可见范围统计失败');
+  }
+  const counts: Record<string, number> = {};
+  for (const item of body.items ?? []) {
+    const id = item.assignee?.trim();
+    if (!id) continue;
+    counts[id] = item.count ?? 0;
+  }
+  return {
+    total: body.total ?? 0,
+    unassigned: body.unassigned ?? 0,
+    counts,
+  };
+}
+
 export async function fetchCustLabelStats(cliAbbr: string): Promise<CustLabelStatsResult> {
   const response = await api.get<CustLabelStatsApiResponse>('/business/cust-label-stats', {
     params: { cliAbbr },
@@ -532,19 +575,21 @@ interface BatchAssignApiResponse {
   success: boolean;
   message?: string;
   updated?: number;
-  ownerId?: string;
-  ownerName?: string;
+  assignee?: string;
 }
 
-/** POST /api/business/customers/batch-assign — assign selected customers to an employee */
+/** POST /api/business/customers/batch-assign — store the employee's role id in assignee. */
 export async function batchAssignCustomers(
   custIds: string[],
-  owner: { ownerId: string; ownerName: string }
-): Promise<{ updated: number; ownerId: string; ownerName: string }> {
+  assignee: string
+): Promise<{ updated: number; assignee: string }> {
+  const roleId = assignee.trim();
+  if (!roleId) {
+    throw new Error('该员工还没有角色，无法指派');
+  }
   const response = await api.post<BatchAssignApiResponse>('/business/customers/batch-assign', {
     custIds,
-    ownerId: owner.ownerId,
-    ownerName: owner.ownerName,
+    assignee: roleId,
   });
   const body = response.data;
   if (!body?.success) {
@@ -552,8 +597,7 @@ export async function batchAssignCustomers(
   }
   return {
     updated: body.updated ?? 0,
-    ownerId: body.ownerId || owner.ownerId,
-    ownerName: body.ownerName || owner.ownerName,
+    assignee: body.assignee || roleId,
   };
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,6 @@ import {
   TableRow,
   TablePagination,
   TextField,
-  InputAdornment,
   IconButton,
   Chip,
   Avatar,
@@ -21,8 +20,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Card,
-  CardContent,
   Divider,
   CircularProgress,
   Alert,
@@ -47,7 +44,6 @@ import {
   Delete,
   Visibility,
   LocationOn,
-  Email,
   Refresh,
   PersonAdd,
   UploadFile,
@@ -56,9 +52,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { Customer } from '../../models';
 import { getAuthUser, getSessionCliAbbr } from '../../auth/session';
 import {
-  EdDSAUser,
-  fetchUsersByCliAbbr,
-  isUserEnabled,
+  EdDSARole,
+  fetchEdDSARoles,
+  fetchEdDSAUserList,
+  singleRoleId,
 } from '../../data/employeeApi';
 import {
   addCustFollowUp,
@@ -71,6 +68,8 @@ import {
   DEFAULT_LABEL_COLOR,
   LABEL_COLOR_OPTIONS,
   CustStatusStat,
+  ALL_ROLES_ASSIGNEE_SCOPE,
+  fetchAssigneeStats,
   fetchCustLabelStats,
   fetchCustLabels,
   fetchCustStatuses,
@@ -97,34 +96,84 @@ const labelChipSx = (color: string) => ({
   bgcolor: `${color}14`,
 });
 
-const statLabelIconSx = (bgcolor: string, color = '#fff') => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: 28,
-  px: 1,
-  borderRadius: '6px',
-  bgcolor,
-  color,
-  fontSize: 12,
-  fontWeight: 600,
-  lineHeight: 1,
-  whiteSpace: 'nowrap' as const,
-  maxWidth: 72,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
+const FOLLOWER_COLORS = [
+  '#388e3c',
+  '#f57c00',
+  '#d32f2f',
+  '#1976d2',
+  '#7b1fa2',
+  '#00838f',
+  '#5d4037',
+  '#455a64',
+] as const;
+const ALL_ROLES_COLOR = '#607d8b';
+
+const followerChipSx = (color: string) => ({
+  ...labelChipSx(color),
+  maxWidth: 120,
+  '& .MuiChip-label': {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
 });
 
-const statCardSx = {
-  cursor: 'pointer',
+const checkerboardImage = (bgcolor: string) =>
+  `linear-gradient(45deg, ${bgcolor} 25%, transparent 25%), linear-gradient(-45deg, ${bgcolor} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${bgcolor} 75%), linear-gradient(-45deg, transparent 75%, ${bgcolor} 75%)`;
+
+const rulerCellFrame = (row: number, index: number, count: number) => {
+  const isFirst = index === 0;
+  const isLast = index === count - 1;
+  return {
+    gridColumn: index + 3,
+    gridRow: row,
+    justifySelf: 'stretch',
+    borderStyle: 'solid',
+    borderColor: 'divider',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftWidth: isFirst ? 1 : 0,
+    borderRightWidth: 1,
+    borderTopLeftRadius: isFirst ? 6 : 0,
+    borderBottomLeftRadius: isFirst ? 6 : 0,
+    borderTopRightRadius: isLast ? 6 : 0,
+    borderBottomRightRadius: isLast ? 6 : 0,
+  };
+};
+
+const quickFilterButtonSx = (bgcolor: string, selected: boolean) => ({
   flex: '0 0 auto',
-  '&:hover': { boxShadow: 3 },
-  '& .MuiCardContent-root': {
-    py: 0.75,
-    px: 1,
-    '&:last-child': { pb: 0.75 },
-  },
-} as const;
+  px: 1.5,
+  py: 1,
+  textAlign: 'center' as const,
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 500,
+  lineHeight: 1.2,
+  whiteSpace: 'nowrap' as const,
+  ...(selected
+    ? {
+        bgcolor,
+        color: '#fff',
+        backgroundImage: 'none',
+      }
+    : {
+        color: '#212121',
+        backgroundColor: '#fff',
+        backgroundImage: checkerboardImage(bgcolor),
+        backgroundSize: '2px 2px',
+        backgroundPosition: '0 0, 0 1px, 1px -1px, -1px 0',
+      }),
+});
+
+const quickFilterLabelSx = {
+  flex: '0 0 6em',
+  width: '6em',
+  fontWeight: 600,
+  lineHeight: 1.2,
+  whiteSpace: 'nowrap' as const,
+  textAlign: 'left' as const,
+  color: 'text.primary',
+};
 
 interface CustomerSearchFilters {
   name: string;
@@ -154,7 +203,11 @@ const CustomerListPage: React.FC = () => {
   const [appliedFilters, setAppliedFilters] = useState<CustomerSearchFilters>(emptyFilters);
   const [filterLabelOptions, setFilterLabelOptions] = useState<string[]>([]);
   const [selectedTag, setSelectedTag] = useState('');
+  const [selectedVisibility, setSelectedVisibility] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [visibilityTotal, setVisibilityTotal] = useState(0);
+  const [unassignedCount, setUnassignedCount] = useState(0);
+  const [assigneeCounts, setAssigneeCounts] = useState<Record<string, number>>({});
   const [statusStats, setStatusStats] = useState<CustStatusStat[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -197,11 +250,12 @@ const CustomerListPage: React.FC = () => {
   const [batchAction, setBatchAction] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [employeeOptions, setEmployeeOptions] = useState<EdDSAUser[]>([]);
-  const [employeesLoading, setEmployeesLoading] = useState(false);
-  const [employeeSearch, setEmployeeSearch] = useState('');
-  const [employeeKeyword, setEmployeeKeyword] = useState('');
-  const [assignEmployeeId, setAssignEmployeeId] = useState('');
+  const [detailDeleteOpen, setDetailDeleteOpen] = useState(false);
+  const [detailDeleting, setDetailDeleting] = useState(false);
+  const [detailDeleteError, setDetailDeleteError] = useState<string | null>(null);
+  const [roleCatalog, setRoleCatalog] = useState<EdDSARole[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [assignRoleId, setAssignRoleId] = useState('');
   const [batchBusy, setBatchBusy] = useState(false);
   const [batchMessage, setBatchMessage] = useState<string | null>(
     createdName ? `已新增客户「${createdName}」` : null
@@ -276,10 +330,39 @@ const CustomerListPage: React.FC = () => {
     }
   }, []);
 
+  const roleNameOf = (roleId?: string) => {
+    const id = roleId?.trim() || '';
+    if (!id) return '';
+    return roleCatalog.find((role) => role.referenceId === id)?.name || id;
+  };
+
+  const followerLabel = (assignee?: string) => {
+    const id = assignee?.trim() || '';
+    if (!id) return '所有角色';
+    return roleNameOf(id);
+  };
+
+  const followerColor = (assignee?: string) => {
+    const id = assignee?.trim() || '';
+    if (!id) return ALL_ROLES_COLOR;
+    const index = roleCatalog.findIndex((role) => role.referenceId === id);
+    if (index < 0) return FOLLOWER_COLORS[0];
+    return FOLLOWER_COLORS[index % FOLLOWER_COLORS.length];
+  };
+
   const loadCustomers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      let roleId = '';
+      const abbr = getSessionCliAbbr();
+      if (abbr) {
+        const listed = await fetchEdDSAUserList(abbr);
+        setRoleCatalog(listed.roles);
+        const me = getAuthUser();
+        const mine = listed.users.find((user) => user.id === me?.id);
+        roleId = singleRoleId(mine?.roleIds ?? [], listed.roles);
+      }
       const result = await fetchCustomers({
         page: page + 1,
         pageSize: rowsPerPage,
@@ -294,12 +377,23 @@ const CustomerListPage: React.FC = () => {
         registrationDateTo: appliedFilters.registrationDateTo || undefined,
         lastContactFrom: appliedFilters.lastContactFrom || undefined,
         lastContactTo: appliedFilters.lastContactTo || undefined,
+        roleId: roleId || undefined,
+        assigneeScope: selectedVisibility || undefined,
       });
+      try {
+        const stats = await fetchAssigneeStats(roleId || undefined);
+        setVisibilityTotal(stats.total);
+        setUnassignedCount(stats.unassigned);
+        setAssigneeCounts(stats.counts);
+      } catch (statsErr) {
+        console.error('加载可见范围统计失败', statsErr);
+      }
       setCustomers(result.items);
       setTotal(result.total);
       // 「全部客户」以列表未筛选总数为准，避免统计接口失败时一直显示 0
       const noFilters =
         !selectedTag &&
+        !selectedVisibility &&
         !selectedStatus &&
         !appliedFilters.name &&
         appliedFilters.tags.length === 0 &&
@@ -317,7 +411,7 @@ const CustomerListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, appliedFilters, selectedTag, selectedStatus]);
+  }, [page, rowsPerPage, appliedFilters, selectedTag, selectedStatus, selectedVisibility]);
 
   useEffect(() => {
     loadCustomers();
@@ -326,7 +420,7 @@ const CustomerListPage: React.FC = () => {
   useEffect(() => {
     clearSelection();
     resetBatchAction();
-  }, [page, rowsPerPage, appliedFilters, selectedTag, selectedStatus]);
+  }, [page, rowsPerPage, appliedFilters, selectedTag, selectedStatus, selectedVisibility]);
 
   useEffect(() => {
     void loadLabelStats();
@@ -381,6 +475,17 @@ const CustomerListPage: React.FC = () => {
     setPage(0);
     setSelectedTag(tag);
   };
+
+  const selectVisibilityFilter = (scope: string) => {
+    setPage(0);
+    setSelectedVisibility(scope);
+  };
+
+  const visibilityRoles = roleCatalog.filter(
+    (role, index, list) =>
+      Boolean(role.referenceId) &&
+      list.findIndex((item) => item.referenceId === role.referenceId) === index
+  );
 
   const selectStatusFilter = (status: string) => {
     setPage(0);
@@ -445,37 +550,18 @@ const CustomerListPage: React.FC = () => {
 
   const resetBatchAction = () => setBatchAction('');
 
-  const loadEmployeesForAssign = useCallback(async () => {
-    const cliAbbr = getSessionCliAbbr();
-    if (!cliAbbr) {
-      setEmployeeOptions([]);
-      setBatchError('登录会话缺少 cli_abbr，请重新登录');
-      return;
-    }
-    setEmployeesLoading(true);
+  const loadRolesForAssign = useCallback(async () => {
+    setRolesLoading(true);
     setBatchError(null);
     try {
-      // Same source as 员工管理: EdDSA users by cli_abbr
-      const users = await fetchUsersByCliAbbr(cliAbbr);
-      setEmployeeOptions(users);
+      const list = await fetchEdDSARoles();
+      setRoleCatalog(list);
     } catch (err) {
-      setEmployeeOptions([]);
-      setBatchError(err instanceof Error ? err.message : '加载员工列表失败');
+      setBatchError(err instanceof Error ? err.message : '加载角色列表失败');
     } finally {
-      setEmployeesLoading(false);
+      setRolesLoading(false);
     }
   }, []);
-
-  const filteredEmployees = useMemo(() => {
-    const q = employeeKeyword.trim().toLowerCase();
-    if (!q) return employeeOptions;
-    return employeeOptions.filter((u) => {
-      const hay = [u.id, u.name, u.cli_abbr, u.email_addr, u.enabled]
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [employeeOptions, employeeKeyword]);
 
   const handleBatchActionChange = (action: string) => {
     setBatchAction(action);
@@ -488,11 +574,9 @@ const CustomerListPage: React.FC = () => {
       return;
     }
     if (action === 'assign') {
-      setAssignEmployeeId('');
-      setEmployeeSearch('');
-      setEmployeeKeyword('');
+      setAssignRoleId('');
       setAssignDialogOpen(true);
-      void loadEmployeesForAssign();
+      void loadRolesForAssign();
       return;
     }
     if (action === 'delete') {
@@ -501,23 +585,20 @@ const CustomerListPage: React.FC = () => {
   };
 
   const handleConfirmAssign = async () => {
-    if (!assignEmployeeId || selectedIds.length === 0) return;
-    const emp = employeeOptions.find((u) => u.id === assignEmployeeId);
-    if (!emp) {
-      setBatchError('请选择要指派的员工');
+    if (!assignRoleId || selectedIds.length === 0) return;
+    const role = roleCatalog.find((item) => item.referenceId === assignRoleId);
+    if (!role?.referenceId) {
+      setBatchError('请选择角色');
       return;
     }
     setBatchBusy(true);
     setBatchError(null);
     try {
-      const result = await batchAssignCustomers(selectedIds, {
-        ownerId: emp.id,
-        ownerName: emp.name || emp.id,
-      });
+      const result = await batchAssignCustomers(selectedIds, role.referenceId);
       selectedIds.forEach((id) => {
-        syncCustomerFields(id, { ownerId: result.ownerId, ownerName: result.ownerName });
+        syncCustomerFields(id, { assignee: result.assignee });
       });
-      setBatchMessage(`已将 ${result.updated} 个客户指派给 ${result.ownerName}`);
+      setBatchMessage(`已将 ${result.updated} 个客户指派给角色「${role.name}」`);
       setAssignDialogOpen(false);
       clearSelection();
       resetBatchAction();
@@ -561,6 +642,27 @@ const CustomerListPage: React.FC = () => {
     if (batchBusy) return;
     setDeleteDialogOpen(false);
     resetBatchAction();
+  };
+
+  const handleDeleteDetailCustomer = async () => {
+    if (!selectedCustomer || detailDeleting) return;
+    const name = selectedCustomer.name || selectedCustomer.id;
+    setDetailDeleting(true);
+    setDetailDeleteError(null);
+    try {
+      await batchDeleteCustomers([selectedCustomer.id]);
+      setDetailDeleteOpen(false);
+      setDetailDialogOpen(false);
+      setSelectedCustomer(null);
+      setBatchMessage(`已删除客户「${name}」`);
+      await loadCustomers();
+      void loadLabelStats();
+      void loadStatusStats();
+    } catch (err) {
+      setDetailDeleteError(err instanceof Error ? err.message : '删除客户失败');
+    } finally {
+      setDetailDeleting(false);
+    }
   };
 
   const loadStatusOptions = useCallback(async () => {
@@ -910,6 +1012,32 @@ const CustomerListPage: React.FC = () => {
       : selectedCustomer.status || ''
     : '';
 
+  const tagFilters = (() => {
+    const byLabel = new Map(labelStats.map((stat) => [stat.label, stat]));
+    const labels: string[] = [];
+    const seen = new Set<string>();
+    const push = (label: string) => {
+      const name = label.trim();
+      if (!name || seen.has(name)) return;
+      seen.add(name);
+      labels.push(name);
+    };
+    for (const label of filterLabelOptions) push(label);
+    for (const stat of labelStats) push(stat.label);
+    return labels.map((label) => {
+      const stat = byLabel.get(label);
+      return {
+        label,
+        count: stat?.count ?? 0,
+        color: stat?.color?.trim() || colorForLabel(label),
+      };
+    });
+  })();
+  const tagRulerCount = 2 + tagFilters.length;
+  const visibilityRulerCount = 2 + visibilityRoles.length;
+  const statusRulerCount = statusStats.length + 1;
+  const rulerColumns = Math.max(tagRulerCount, visibilityRulerCount, statusRulerCount);
+
   return (
     <Box
       sx={{
@@ -921,35 +1049,49 @@ const CustomerListPage: React.FC = () => {
     >
       <Paper
         elevation={3}
-        component="form"
-        onSubmit={handleSearchSubmit}
-        sx={{ px: 2, py: 1.5, mb: 2, borderRadius: 2, mx: 2, mt: 2 }}
+        sx={{
+          px: 2,
+          py: 1.5,
+          mb: 2,
+          borderRadius: 2,
+          mx: 2,
+          mt: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: 1.5,
+        }}
       >
-        <Typography
-          variant="h6"
-          component="h1"
-          sx={{ fontWeight: 600, whiteSpace: 'nowrap', mb: 1.25 }}
-        >
-          客户管理
-        </Typography>
-
         <Box
           sx={{
             display: 'flex',
-            flexWrap: 'nowrap',
+            flexWrap: 'wrap',
             alignItems: 'center',
-            gap: 1.25,
-            overflowX: 'auto',
-            // Keep room for OutlinedInput floating labels (overflow-x otherwise clips them).
-            pt: 1,
-            pb: 0.5,
+            justifyContent: 'space-between',
+            gap: 1,
+            minHeight: 36,
           }}
         >
+          <Typography
+            variant="h6"
+            component="h1"
+            sx={{
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              fontSize: '1.5rem',
+              lineHeight: '36px',
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            快捷选择
+          </Typography>
           <Button
             id="add-customer-button"
             variant="contained"
             size="small"
-            startIcon={<Add />}
+            startIcon={<Edit />}
             aria-haspopup="menu"
             aria-controls={addMenuAnchor ? 'add-customer-menu' : undefined}
             aria-expanded={Boolean(addMenuAnchor)}
@@ -957,279 +1099,171 @@ const CustomerListPage: React.FC = () => {
               borderRadius: 2,
               flexShrink: 0,
               whiteSpace: 'nowrap',
-              height: 40,
-              minHeight: 40,
+              height: 36,
+              minHeight: 36,
               px: 2,
             }}
             onClick={(event) => setAddMenuAnchor(event.currentTarget)}
           >
-            新增客户
+            更多功能
           </Button>
-          <Menu
-            id="add-customer-menu"
-            anchorEl={addMenuAnchor}
-            open={Boolean(addMenuAnchor)}
-            onClose={() => setAddMenuAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-            PaperProps={{ sx: { minWidth: 168, mt: 0.5 } }}
-          >
-            <MenuItem
-              onClick={() => {
-                setAddMenuAnchor(null);
-                navigate('/business/customers/new');
-              }}
-            >
-              <ListItemIcon>
-                <PersonAdd fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>逐个新增</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setAddMenuAnchor(null);
-                navigate('/business/customers/import');
-              }}
-            >
-              <ListItemIcon>
-                <UploadFile fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>批量上传</ListItemText>
-            </MenuItem>
-          </Menu>
-
-          <Box sx={{ flex: '1 1 auto', minWidth: 16 }} />
-
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'nowrap',
-              alignItems: 'center',
-              gap: 1.25,
-              flexShrink: 0,
-              '& .MuiInputLabel-root': { whiteSpace: 'nowrap' },
+        </Box>
+        <Menu
+          id="add-customer-menu"
+          anchorEl={addMenuAnchor}
+          open={Boolean(addMenuAnchor)}
+          onClose={() => setAddMenuAnchor(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          PaperProps={{ sx: { minWidth: 168, mt: 0.5 } }}
+        >
+          <MenuItem
+            onClick={() => {
+              setAddMenuAnchor(null);
+              navigate('/business/customers/new');
             }}
           >
-            <Autocomplete
-              multiple
-              size="small"
-              options={filterLabelOptions}
-              value={draftFilters.tags}
-              onChange={(_e, value) =>
-                setDraftFilters((prev) => ({ ...prev, tags: value }))
-              }
-              renderInput={(params) => (
-                <TextField {...params} label="标签" placeholder="可多选" />
-              )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    key={option}
-                    size="small"
-                    label={option}
-                  />
-                ))
-              }
-              sx={{ width: 280, minWidth: 280, flex: '0 0 280px' }}
-            />
-            <TextField
-              size="small"
-              label="姓名"
-              value={draftFilters.name}
-              onChange={(e) =>
-                setDraftFilters((prev) => ({ ...prev, name: e.target.value }))
-              }
-              sx={{ width: 140, minWidth: 140, flex: '0 0 140px' }}
-            />
-            <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
-              <TextField
-                size="small"
-                label="添加日期起"
-                type="date"
-                value={draftFilters.registrationDateFrom}
-                onChange={(e) =>
-                  setDraftFilters((prev) => ({
-                    ...prev,
-                    registrationDateFrom: e.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
-                sx={{ width: 168 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                ~
-              </Typography>
-              <TextField
-                size="small"
-                label="添加日期止"
-                type="date"
-                value={draftFilters.registrationDateTo}
-                onChange={(e) =>
-                  setDraftFilters((prev) => ({
-                    ...prev,
-                    registrationDateTo: e.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
-                sx={{ width: 168 }}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
-              <TextField
-                size="small"
-                label="最后联系起"
-                type="date"
-                value={draftFilters.lastContactFrom}
-                onChange={(e) =>
-                  setDraftFilters((prev) => ({
-                    ...prev,
-                    lastContactFrom: e.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
-                sx={{ width: 168 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                ~
-              </Typography>
-              <TextField
-                size="small"
-                label="最后联系止"
-                type="date"
-                value={draftFilters.lastContactTo}
-                onChange={(e) =>
-                  setDraftFilters((prev) => ({
-                    ...prev,
-                    lastContactTo: e.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
-                sx={{ width: 168 }}
-              />
-            </Box>
-            <Button
-              type="submit"
-              variant="outlined"
-              size="small"
-              startIcon={<Search />}
-              disabled={loading || statsLoading}
-              sx={{
-                borderRadius: 2,
-                flexShrink: 0,
-                whiteSpace: 'nowrap',
-                height: 40,
-                minHeight: 40,
-                px: 2,
+            <ListItemIcon>
+              <PersonAdd fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>新增客户</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setAddMenuAnchor(null);
+              navigate('/business/customers/import');
+            }}
+          >
+            <ListItemIcon>
+              <UploadFile fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>导入客户</ListItemText>
+          </MenuItem>
+          {canManageLabels && (
+            <MenuItem
+              onClick={() => {
+                setAddMenuAnchor(null);
+                navigate('/business/customers/labels');
               }}
             >
-              搜索
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+              <ListItemText inset>标签管理</ListItemText>
+            </MenuItem>
+          )}
+          {canManageStatuses && (
+            <MenuItem
+              onClick={() => {
+                setAddMenuAnchor(null);
+                navigate('/business/customers/statuses');
+              }}
+            >
+              <ListItemText inset>状态管理</ListItemText>
+            </MenuItem>
+          )}
+        </Menu>
 
       <Box
         sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 1,
-          mb: 2,
-          mx: 2,
+          display: 'grid',
+          gridTemplateColumns: rulerColumns > 0 ? `6em 8px repeat(${rulerColumns}, max-content)` : '6em',
+          alignItems: 'stretch',
+          rowGap: 1.5,
+          minWidth: 0,
+          maxWidth: '100%',
+          overflowX: 'auto',
         }}
       >
-        <Card
-          sx={{
-            ...statCardSx,
-            outline: selectedTag === '' ? '2px solid' : 'none',
-            outlineColor: 'primary.main',
-          }}
+        <Typography variant="body2" component="span" sx={{ ...quickFilterLabelSx, gridColumn: 1, gridRow: 1, alignSelf: 'center' }}>
+          按标签
+        </Typography>
+        <Box
+          title={`全部（${totalCust}）`}
           onClick={() => selectTagFilter('')}
+          sx={(theme) => ({
+            ...quickFilterButtonSx(theme.palette.primary.main, selectedTag === ''),
+            ...rulerCellFrame(1, 0, tagRulerCount),
+          })}
         >
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <Box title="全部客户" sx={statLabelIconSx('primary.main', 'primary.contrastText')}>
-                全部
-              </Box>
-              <Typography variant="subtitle1" component="div" sx={{ lineHeight: 1.2, fontWeight: 700 }}>
-                {totalCust}
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-        {labelStats.map((stat) => {
-          const color = colorForLabel(stat.label);
+          全部（{totalCust}）
+        </Box>
+        {tagFilters.map((stat, index) => (
+          <Box
+            key={stat.label}
+            title={`${stat.label}（${stat.count}）`}
+            onClick={() => selectTagFilter(stat.label)}
+            sx={{
+              ...quickFilterButtonSx(stat.color, selectedTag === stat.label),
+              ...rulerCellFrame(1, index + 1, tagRulerCount),
+            }}
+          >
+            {stat.label}（{stat.count}）
+          </Box>
+        ))}
+        <Box
+          title={`未标注（${untaggedCust}）`}
+          onClick={() => selectTagFilter('__untagged__')}
+          sx={(theme) => ({
+            ...quickFilterButtonSx(theme.palette.grey[500], selectedTag === '__untagged__'),
+            ...rulerCellFrame(1, tagFilters.length + 1, tagRulerCount),
+          })}
+        >
+          未标注（{untaggedCust}）
+        </Box>
+
+        <Typography variant="body2" component="span" sx={{ ...quickFilterLabelSx, gridColumn: 1, gridRow: 2, alignSelf: 'center' }}>
+          按可见范围
+        </Typography>
+        <Box
+          title={`全部（${visibilityTotal}）`}
+          onClick={() => selectVisibilityFilter('')}
+          sx={(theme) => ({
+            ...quickFilterButtonSx(theme.palette.primary.main, selectedVisibility === ''),
+            ...rulerCellFrame(2, 0, visibilityRulerCount),
+          })}
+        >
+          全部（{visibilityTotal}）
+        </Box>
+        <Box
+          title={`所有角色（${unassignedCount}）`}
+          onClick={() => selectVisibilityFilter(ALL_ROLES_ASSIGNEE_SCOPE)}
+          sx={{
+            ...quickFilterButtonSx(ALL_ROLES_COLOR, selectedVisibility === ALL_ROLES_ASSIGNEE_SCOPE),
+            ...rulerCellFrame(2, 1, visibilityRulerCount),
+          }}
+        >
+          所有角色（{unassignedCount}）
+        </Box>
+        {visibilityRoles.map((role, index) => {
+          const color = FOLLOWER_COLORS[index % FOLLOWER_COLORS.length];
+          const count = assigneeCounts[role.referenceId] ?? 0;
           return (
-            <Card
-              key={stat.label}
+            <Box
+              key={role.referenceId}
+              title={`${role.name}（${count}）`}
+              onClick={() => selectVisibilityFilter(role.referenceId)}
               sx={{
-                ...statCardSx,
-                outline: selectedTag === stat.label ? '2px solid' : 'none',
-                outlineColor: color,
+                ...quickFilterButtonSx(color, selectedVisibility === role.referenceId),
+                ...rulerCellFrame(2, index + 2, visibilityRulerCount),
               }}
-              onClick={() => selectTagFilter(stat.label)}
             >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <Box title={stat.label} sx={statLabelIconSx(color)}>
-                    {stat.label}
-                  </Box>
-                  <Typography variant="subtitle1" component="div" sx={{ lineHeight: 1.2, fontWeight: 700 }}>
-                    {stat.count}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+              {role.name}（{count}）
+            </Box>
           );
         })}
-        <Card
-          sx={{
-            ...statCardSx,
-            outline: selectedTag === '__untagged__' ? '2px solid' : 'none',
-            outlineColor: 'primary.main',
-          }}
-          onClick={() => selectTagFilter('__untagged__')}
-        >
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <Box title="未标注" sx={statLabelIconSx('grey.500')}>
-                未标注
-              </Box>
-              <Typography variant="subtitle1" component="div" sx={{ lineHeight: 1.2, fontWeight: 700 }}>
-                {untaggedCust}
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-        {canManageLabels && (
-          <Card sx={statCardSx} onClick={() => navigate('/business/customers/labels')}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <Box title="标签管理" sx={statLabelIconSx('secondary.main', 'secondary.contrastText')}>
-                  标签管理
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-      </Box>
 
-      <Box
-        sx={{
-          display: 'inline-flex',
-          maxWidth: '100%',
-          mx: 2,
-          mb: 2,
-          borderRadius: 1.5,
-          overflow: 'hidden',
-          border: '1px solid',
-          borderColor: 'divider',
-          alignSelf: 'flex-start',
-        }}
-      >
+        <Typography variant="body2" component="span" sx={{ ...quickFilterLabelSx, gridColumn: 1, gridRow: 3, alignSelf: 'center' }}>
+          按状态
+        </Typography>
+        <Box
+          title={`全部（${totalCust}）`}
+          onClick={() => selectStatusFilter('')}
+          sx={(theme) => ({
+            ...quickFilterButtonSx(theme.palette.primary.main, selectedStatus === ''),
+            ...rulerCellFrame(3, 0, statusRulerCount),
+          })}
+        >
+          全部（{totalCust}）
+        </Box>
         {statusStats.map((stat, index) => {
-          const selected = selectedStatus === stat.status;
           const color = getStatusRulerColor(stat.status, index);
           return (
             <Box
@@ -1237,70 +1271,217 @@ const CustomerListPage: React.FC = () => {
               onClick={() => selectStatusFilter(stat.status)}
               title={`${stat.status}（${stat.count}）`}
               sx={{
-                flex: '0 0 auto',
-                px: 1.5,
-                py: 1,
-                textAlign: 'center',
-                cursor: 'pointer',
-                bgcolor: color,
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: selected ? 700 : 500,
-                filter: selected ? 'none' : 'saturate(0.75) brightness(0.92)',
-                boxShadow: selected
-                  ? 'inset 0 0 0 2px rgba(255,255,255,0.95)'
-                  : 'inset 0 -2px 0 rgba(0,0,0,0.12)',
-                borderRight: '1px solid rgba(255,255,255,0.35)',
-                whiteSpace: 'nowrap',
+                ...quickFilterButtonSx(color, selectedStatus === stat.status),
+                ...rulerCellFrame(3, index + 1, statusRulerCount),
               }}
             >
               {stat.status}（{stat.count}）
             </Box>
           );
         })}
-        {canManageStatuses && (
-          <Box
-            onClick={() => navigate('/business/customers/statuses')}
-            title="状态管理"
-            sx={{
-              flex: '0 0 auto',
-              px: 1.5,
-              py: 1,
-              textAlign: 'center',
-              cursor: 'pointer',
-              bgcolor: 'secondary.main',
-              color: 'secondary.contrastText',
-              fontSize: 13,
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            状态管理
-          </Box>
+        {(selectedTag || selectedVisibility || selectedStatus) && (
+          <>
+            <Typography
+              variant="body2"
+              component="span"
+              sx={{ ...quickFilterLabelSx, gridColumn: 1, gridRow: 4, alignSelf: 'center' }}
+            >
+              当前筛选
+            </Typography>
+            <Box
+              sx={{
+                gridColumn: '3 / -1',
+                gridRow: 4,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+                minWidth: 0,
+              }}
+            >
+              {selectedTag && (
+                <Chip
+                  label={selectedTag === '__untagged__' ? '标签：未标注' : `标签：${selectedTag}`}
+                  color="primary"
+                  onDelete={() => selectTagFilter('')}
+                />
+              )}
+              {selectedVisibility && (
+                <Chip
+                  label={
+                    selectedVisibility === ALL_ROLES_ASSIGNEE_SCOPE
+                      ? '可见范围：所有角色'
+                      : `可见范围：${roleNameOf(selectedVisibility)}`
+                  }
+                  onDelete={() => selectVisibilityFilter('')}
+                />
+              )}
+              {selectedStatus && (
+                <Chip
+                  label={`状态：${selectedStatus}`}
+                  color="secondary"
+                  onDelete={() => selectStatusFilter('')}
+                />
+              )}
+            </Box>
+          </>
         )}
       </Box>
+      </Paper>
 
-      {(selectedTag || selectedStatus) && (
-        <Box sx={{ mx: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Typography variant="body2" color="text.secondary">
-            当前筛选：
-          </Typography>
-          {selectedTag && (
-            <Chip
-              label={selectedTag === '__untagged__' ? `标签：未标注` : `标签：${selectedTag}`}
-              color="primary"
-              onDelete={() => selectTagFilter('')}
+      <Paper
+        elevation={3}
+        component="form"
+        onSubmit={handleSearchSubmit}
+        sx={{ px: 2, py: 1.5, mb: 2, borderRadius: 2, mx: 2, minWidth: 0 }}
+      >
+        <Typography
+          variant="h6"
+          component="h2"
+          sx={{ fontWeight: 600, whiteSpace: 'nowrap', mb: 1.25 }}
+        >
+          组合查询
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            minWidth: 0,
+          }}
+        >
+        <Box
+          sx={{
+            display: 'flex',
+            flex: '1 1 auto',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            gap: 1.25,
+            minWidth: 0,
+            overflowX: 'auto',
+            pt: 1,
+            pb: 0.5,
+            '& .MuiInputLabel-root': { whiteSpace: 'nowrap' },
+          }}
+        >
+          <Autocomplete
+            multiple
+            size="small"
+            options={filterLabelOptions}
+            value={draftFilters.tags}
+            onChange={(_e, value) =>
+              setDraftFilters((prev) => ({ ...prev, tags: value }))
+            }
+            renderInput={(params) => (
+              <TextField {...params} label="标签" placeholder="可多选" />
+            )}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={option}
+                  size="small"
+                  label={option}
+                />
+              ))
+            }
+            sx={{ width: 280, minWidth: 280, flex: '0 0 280px' }}
+          />
+          <TextField
+            size="small"
+            label="姓名"
+            value={draftFilters.name}
+            onChange={(e) =>
+              setDraftFilters((prev) => ({ ...prev, name: e.target.value }))
+            }
+            sx={{ width: 140, minWidth: 140, flex: '0 0 140px' }}
+          />
+          <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
+            <TextField
+              size="small"
+              label="添加日期起"
+              type="date"
+              value={draftFilters.registrationDateFrom}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  registrationDateFrom: e.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 168 }}
             />
-          )}
-          {selectedStatus && (
-            <Chip
-              label={`状态：${selectedStatus}`}
-              color="secondary"
-              onDelete={() => selectStatusFilter('')}
+            <Typography variant="body2" color="text.secondary">
+              ~
+            </Typography>
+            <TextField
+              size="small"
+              label="添加日期止"
+              type="date"
+              value={draftFilters.registrationDateTo}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  registrationDateTo: e.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 168 }}
             />
-          )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
+            <TextField
+              size="small"
+              label="最后联系起"
+              type="date"
+              value={draftFilters.lastContactFrom}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  lastContactFrom: e.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 168 }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              ~
+            </Typography>
+            <TextField
+              size="small"
+              label="最后联系止"
+              type="date"
+              value={draftFilters.lastContactTo}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  lastContactTo: e.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 168 }}
+            />
+          </Box>
         </Box>
-      )}
+          <Button
+            type="submit"
+            variant="outlined"
+            size="small"
+            startIcon={<Search />}
+            disabled={loading || statsLoading}
+            sx={{
+              borderRadius: 2,
+              flex: '0 0 auto',
+              whiteSpace: 'nowrap',
+              height: 40,
+              minHeight: 40,
+              px: 2,
+            }}
+          >
+            搜索
+          </Button>
+        </Box>
+      </Paper>
 
       <Paper
         elevation={2}
@@ -1367,7 +1548,7 @@ const CustomerListPage: React.FC = () => {
               onChange={(e) => handleBatchActionChange(String(e.target.value))}
               disabled={selectedIds.length === 0 || batchBusy}
             >
-              <MenuItem value="assign">指派给员工</MenuItem>
+              <MenuItem value="assign">指派给角色</MenuItem>
               <MenuItem value="delete">删除</MenuItem>
             </Select>
           </FormControl>
@@ -1405,6 +1586,7 @@ const CustomerListPage: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600 }}>客户信息</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>公司</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>标签</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>可见范围</TableCell>
                 <TableCell sx={{ fontWeight: 600, minWidth: 180 }}>跟进记录</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>添加日期</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>状态</TableCell>
@@ -1414,7 +1596,7 @@ const CustomerListPage: React.FC = () => {
             <TableBody>
               {!loading && customers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
                     <Typography color="text.secondary">暂无客户数据</Typography>
                   </TableCell>
                 </TableRow>
@@ -1525,15 +1707,17 @@ const CustomerListPage: React.FC = () => {
                         )}
                       </Box>
                     </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={followerLabel(customer.assignee)}
+                        size="small"
+                        variant="outlined"
+                        title={followerLabel(customer.assignee)}
+                        sx={followerChipSx(followerColor(customer.assignee))}
+                      />
+                    </TableCell>
                     <TableCell sx={{ maxWidth: 220 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: 600, color: 'text.primary' }}
-                          title={customer.ownerName || undefined}
-                        >
-                          跟进人：{customer.ownerName?.trim() || '未指派'}
-                        </Typography>
                         {(customer.followUps || []).length === 0 ? (
                           <Typography variant="body2" color="text.secondary">
                             -
@@ -1577,19 +1761,15 @@ const CustomerListPage: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewCustomer(customer)}
-                          sx={{ color: 'primary.main' }}
-                          title="查看详情"
-                        >
-                          <Visibility />
-                        </IconButton>
-                        <IconButton size="small" sx={{ color: 'error.main' }} title="删除">
-                          <Delete />
-                        </IconButton>
-                      </Box>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleViewCustomer(customer)}
+                        sx={{ color: 'primary.main' }}
+                        title="查看详情"
+                        aria-label={`查看 ${customer.name || customer.id}`}
+                      >
+                        <Visibility />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -1611,166 +1791,88 @@ const CustomerListPage: React.FC = () => {
         />
       </Paper>
 
-      <Dialog
-        open={assignDialogOpen}
-        onClose={closeAssignDialog}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { minHeight: '70vh' } }}
-      >
+      <Dialog open={assignDialogOpen} onClose={closeAssignDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
             <Box>
               <Typography variant="h6" component="div">
-                选择员工
+                选择角色
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                将已选的 {selectedIds.length} 个客户指派给员工（数据来自员工管理列表）
+                将已选的 {selectedIds.length} 个客户指派给一个角色
               </Typography>
             </Box>
             <Button
               size="small"
               variant="outlined"
               startIcon={<Refresh />}
-              onClick={() => void loadEmployeesForAssign()}
-              disabled={employeesLoading || batchBusy}
+              onClick={() => void loadRolesForAssign()}
+              disabled={rolesLoading || batchBusy}
             >
               刷新
             </Button>
           </Box>
         </DialogTitle>
-        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 2, position: 'relative', minHeight: 180 }}>
           {batchError && assignDialogOpen && (
             <Alert severity="error" onClose={() => setBatchError(null)}>
               {batchError}
             </Alert>
           )}
-          <Box
-            component="form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setEmployeeKeyword(employeeSearch.trim());
-            }}
-            sx={{ display: 'flex', gap: 1 }}
-          >
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="筛选姓名、邮箱、ID..."
-              value={employeeSearch}
-              onChange={(e) => setEmployeeSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button type="submit" variant="contained" sx={{ whiteSpace: 'nowrap' }}>
-              筛选
-            </Button>
-          </Box>
-
-          <TableContainer sx={{ flexGrow: 1, position: 'relative', minHeight: 320 }}>
-            {employeesLoading && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: 'rgba(255,255,255,0.6)',
-                  zIndex: 1,
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            )}
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox" />
-                  <TableCell sx={{ fontWeight: 600 }}>用户</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>邮箱</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>客户简称</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>状态</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!employeesLoading && filteredEmployees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                      <Typography color="text.secondary">暂无用户数据</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEmployees.map((user) => {
-                    const enabled = isUserEnabled(user.enabled);
-                    const selected = assignEmployeeId === user.id;
-                    return (
-                      <TableRow
-                        key={user.id}
-                        hover
-                        selected={selected}
-                        onClick={() => {
-                          if (!enabled || batchBusy) return;
-                          setAssignEmployeeId(user.id);
-                        }}
-                        sx={{
-                          cursor: enabled ? 'pointer' : 'not-allowed',
-                          opacity: enabled ? 1 : 0.55,
-                        }}
-                      >
-                        <TableCell padding="checkbox">
-                          <Radio
-                            checked={selected}
-                            disabled={!enabled || batchBusy}
-                            onChange={() => setAssignEmployeeId(user.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            inputProps={{ 'aria-label': `选择员工 ${user.name || user.id}` }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar sx={{ mr: 1.5, width: 32, height: 32, bgcolor: 'primary.main' }}>
-                              {(user.name || '?').charAt(0)}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                {user.name || '-'}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                ID: {user.id}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Email sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                            <Typography variant="body2">{user.email_addr || '-'}</Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">{user.cli_abbr || '-'}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={enabled ? '启用' : '禁用'}
-                            color={enabled ? 'success' : 'default'}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {rolesLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={28} />
+            </Box>
+          )}
+          {!rolesLoading && roleCatalog.length === 0 && (
+            <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+              暂无角色
+            </Typography>
+          )}
+          {!rolesLoading &&
+            roleCatalog.map((role) => {
+              const selectable = Boolean(role.referenceId) && !batchBusy;
+              const selected = assignRoleId === role.referenceId && role.referenceId !== '';
+              return (
+                <Box
+                  key={role.referenceId || role.name}
+                  role="button"
+                  tabIndex={selectable ? 0 : -1}
+                  aria-pressed={selected}
+                  aria-label={role.name}
+                  onClick={() => {
+                    if (selectable) setAssignRoleId(role.referenceId);
+                  }}
+                  onKeyDown={(event) => {
+                    if (!selectable) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setAssignRoleId(role.referenceId);
+                    }
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    cursor: selectable ? 'pointer' : 'not-allowed',
+                    opacity: selectable ? 1 : 0.55,
+                    bgcolor: selected ? 'action.selected' : 'transparent',
+                  }}
+                >
+                  <Radio
+                    checked={selected}
+                    disabled={!selectable}
+                    onChange={() => setAssignRoleId(role.referenceId)}
+                    onClick={(event) => event.stopPropagation()}
+                    inputProps={{ 'aria-label': `选择角色 ${role.name}` }}
+                  />
+                  <Typography variant="body1">{role.name}</Typography>
+                </Box>
+              );
+            })}
         </DialogContent>
         <DialogActions>
           <Button onClick={closeAssignDialog} disabled={batchBusy}>
@@ -1779,7 +1881,7 @@ const CustomerListPage: React.FC = () => {
           <Button
             variant="contained"
             onClick={() => void handleConfirmAssign()}
-            disabled={batchBusy || !assignEmployeeId}
+            disabled={batchBusy || !assignRoleId}
           >
             {batchBusy ? '指派中…' : '确认指派'}
           </Button>
@@ -1810,7 +1912,10 @@ const CustomerListPage: React.FC = () => {
 
       <Dialog
         open={detailDialogOpen}
-        onClose={() => setDetailDialogOpen(false)}
+        onClose={() => {
+          if (detailDeleting) return;
+          setDetailDialogOpen(false);
+        }}
         maxWidth="md"
         fullWidth
       >
@@ -2449,42 +2554,95 @@ const CustomerListPage: React.FC = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
           {profileEditing ? (
-            <>
-              <Button onClick={cancelProfileEdit} disabled={profileSaving}>
-                取消
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => void handleSaveProfile()}
-                disabled={profileSaving || !profileDraft.name.trim()}
-              >
-                {profileSaving ? '保存中…' : '保存'}
-              </Button>
-            </>
+            <Box />
           ) : (
-            <>
-              <Button
-                onClick={() => {
-                  setProfileEditing(false);
-                  setProfileError(null);
-                  setDetailDialogOpen(false);
-                }}
-              >
-                关闭
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Edit />}
-                onClick={startProfileEdit}
-                disabled={!canEditProfile}
-                title={canEditProfile ? undefined : '无权限编辑客户信息'}
-              >
-                编辑客户
-              </Button>
-            </>
+            <Button
+              color="error"
+              startIcon={<Delete />}
+              onClick={() => {
+                setDetailDeleteError(null);
+                setDetailDeleteOpen(true);
+              }}
+              disabled={!selectedCustomer || detailDeleting}
+            >
+              删除
+            </Button>
           )}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {profileEditing ? (
+              <>
+                <Button onClick={cancelProfileEdit} disabled={profileSaving}>
+                  取消
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => void handleSaveProfile()}
+                  disabled={profileSaving || !profileDraft.name.trim()}
+                >
+                  {profileSaving ? '保存中…' : '保存'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => {
+                    setProfileEditing(false);
+                    setProfileError(null);
+                    setDetailDialogOpen(false);
+                  }}
+                  disabled={detailDeleting}
+                >
+                  关闭
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Edit />}
+                  onClick={startProfileEdit}
+                  disabled={!canEditProfile || detailDeleting}
+                  title={canEditProfile ? undefined : '无权限编辑客户信息'}
+                >
+                  编辑客户
+                </Button>
+              </>
+            )}
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={detailDeleteOpen}
+        onClose={() => {
+          if (detailDeleting) return;
+          setDetailDeleteOpen(false);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>确认删除</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            确定删除客户「{selectedCustomer?.name || selectedCustomer?.id}」吗？此操作不可恢复。
+          </DialogContentText>
+          {detailDeleteError && (
+            <Alert severity="error" sx={{ mt: 2 }} onClose={() => setDetailDeleteError(null)}>
+              {detailDeleteError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailDeleteOpen(false)} disabled={detailDeleting}>
+            取消
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => void handleDeleteDetailCustomer()}
+            disabled={detailDeleting || !selectedCustomer}
+          >
+            {detailDeleting ? '删除中…' : '确认删除'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

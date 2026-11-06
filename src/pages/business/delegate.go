@@ -125,8 +125,31 @@ func statusFilterCond(status string) builder.Cond {
 	return builder.In("status", values)
 }
 
+// assigneeCond keeps rows assigned to the employee's role, plus rows with no assignee.
+func assigneeCond(roleID string) builder.Cond {
+	roleID = strings.TrimSpace(roleID)
+	if roleID == "" {
+		return builder.Expr("(assignee = '' OR assignee IS NULL)")
+	}
+	return builder.Expr("(assignee = ? OR assignee = '' OR assignee IS NULL)", roleID)
+}
+
+// assigneeScopeCond narrows the already-visible rows by the visibility chip.
+func assigneeScopeCond(scope string) builder.Cond {
+	scope = strings.TrimSpace(scope)
+	if scope == "" {
+		return builder.NewCond()
+	}
+	if scope == allRolesAssigneeScope {
+		return builder.Expr("(assignee = '' OR assignee IS NULL)")
+	}
+	return builder.Eq{"assignee": scope}
+}
+
 func customerListCond(req ListCustomersRequest) builder.Cond {
-	cond := keywordCond(req.Keyword)
+	cond := assigneeCond(req.RoleID)
+	cond = cond.And(assigneeScopeCond(req.AssigneeScope))
+	cond = cond.And(keywordCond(req.Keyword))
 	cond = cond.And(nameCond(req.Name))
 	if req.Tag != "" {
 		cond = cond.And(tagFilterCond(req.Tag))
@@ -169,15 +192,16 @@ func (d *Delegate) ListCustomers(ctx context.Context, req ListCustomersRequest) 
 		return nil, 0, 0, 0, 0, eris.Wrap(err, "find potential_cust")
 	}
 
-	active, err = countByStatus(ctx, "active")
+	visible := assigneeCond(req.RoleID)
+	active, err = countByStatus(ctx, "active", visible)
 	if err != nil {
 		return nil, 0, 0, 0, 0, err
 	}
-	pending, err = countByStatus(ctx, "pending")
+	pending, err = countByStatus(ctx, "pending", visible)
 	if err != nil {
 		return nil, 0, 0, 0, 0, err
 	}
-	inactive, err = countByStatus(ctx, "inactive")
+	inactive, err = countByStatus(ctx, "inactive", visible)
 	if err != nil {
 		return nil, 0, 0, 0, 0, err
 	}
@@ -185,10 +209,44 @@ func (d *Delegate) ListCustomers(ctx context.Context, req ListCustomersRequest) 
 	return items, total, active, pending, inactive, nil
 }
 
-func countByStatus(ctx context.Context, status string) (int64, error) {
+// CountVisibleAssignees groups customers the employee can see by assignee.
+func (d *Delegate) CountVisibleAssignees(ctx context.Context, roleID string) (total, unassigned int64, items []AssigneeStat, err error) {
+	whereSQL, args, err := builder.ToSQL(assigneeCond(roleID))
+	if err != nil {
+		return 0, 0, nil, eris.Wrap(err, "assignee stats cond")
+	}
+
+	type row struct {
+		Assignee string `xorm:"assignee"`
+		Count    int64  `xorm:"cnt"`
+	}
 	session := essentials.NewSession(ctx)
 	defer session.Close()
-	n, err := session.Where("status = ?", status).Count(new(PotentialCust))
+	rows := make([]row, 0)
+	err = session.SQL(
+		"SELECT IFNULL(assignee, '') AS assignee, COUNT(*) AS cnt FROM potential_cust WHERE "+whereSQL+" GROUP BY IFNULL(assignee, '')",
+		args...,
+	).Find(&rows)
+	if err != nil {
+		return 0, 0, nil, eris.Wrap(err, "count assignees")
+	}
+
+	items = make([]AssigneeStat, 0, len(rows))
+	for _, r := range rows {
+		total += r.Count
+		if strings.TrimSpace(r.Assignee) == "" {
+			unassigned += r.Count
+			continue
+		}
+		items = append(items, AssigneeStat{Assignee: r.Assignee, Count: r.Count})
+	}
+	return total, unassigned, items, nil
+}
+
+func countByStatus(ctx context.Context, status string, extra builder.Cond) (int64, error) {
+	session := essentials.NewSession(ctx)
+	defer session.Close()
+	n, err := session.Where(extra.And(builder.Eq{"status": status})).Count(new(PotentialCust))
 	if err != nil {
 		return 0, eris.Wrap(err, fmt.Sprintf("count potential_cust status=%s", status))
 	}
@@ -274,7 +332,7 @@ func (d *Delegate) BatchUpsertCustomers(ctx context.Context, customers []Custome
 	toInsert := make([]Customer, 0, len(valid))
 	for _, c := range valid {
 		if _, ok := existSet[c.ID]; ok {
-			if _, uerr := session.Where("id = ?", c.ID).AllCols().Update(&c); uerr != nil {
+			if _, uerr := session.Where("id = ?", c.ID).Omit("assignee").AllCols().Update(&c); uerr != nil {
 				failed++
 				if len(samples) < maxSamples {
 					samples = append(samples, fmt.Sprintf("update id=%s: %v", c.ID, uerr))
