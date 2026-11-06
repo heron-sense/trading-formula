@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { getAccessToken, getAuthUser } from '../auth/session';
 import { api } from '../backend/api';
+import { parseEdDSAUsersBody } from './eddsaUserRoles';
+
+export { mergeEdDSARoles, resolveRoleNames, singleRoleId } from './eddsaUserRoles';
 
 const AUTH_BASE = import.meta.env.VITE_AUTH_BASE_URL || '/api/EdDSA-island';
 const CLI_ABBR_KEY = 'cli_abbr';
@@ -14,10 +17,13 @@ export interface EdDSAUser {
   cli_abbr: string;
   email_addr: string;
   enabled: string;
+  /** Role identifiers from the users payload. Values are role names or role lrids. */
+  roleIds: string[];
 }
 
-interface UsersApiResponse {
-  users?: EdDSAUser[];
+export interface EdDSAUserList {
+  users: EdDSAUser[];
+  roles: EdDSARole[];
 }
 
 export function getStoredCliAbbr(): string {
@@ -396,13 +402,13 @@ export async function assignEdDSAUserRole(input: AssignEdDSAUserRoleInput): Prom
   }
 }
 
-/** POST /api/EdDSA-island/users — list users by company cli_abbr */
-export async function fetchUsersByCliAbbr(cliAbbr: string): Promise<EdDSAUser[]> {
+/** POST /api/EdDSA-island/users — users plus the role catalog used to resolve role_id. */
+export async function fetchEdDSAUserList(cliAbbr: string): Promise<EdDSAUserList> {
   const abbr = validateCliAbbr(cliAbbr);
   storeCliAbbr(abbr);
 
   try {
-    const { data } = await axios.post<UsersApiResponse>(
+    const { data } = await axios.post(
       `${AUTH_BASE}/users`,
       { cli_abbr: abbr },
       {
@@ -411,10 +417,16 @@ export async function fetchUsersByCliAbbr(cliAbbr: string): Promise<EdDSAUser[]>
         withCredentials: true,
       }
     );
-    return Array.isArray(data?.users) ? data.users : [];
+    return parseEdDSAUsersBody(data);
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
+}
+
+/** POST /api/EdDSA-island/users — list users by company cli_abbr */
+export async function fetchUsersByCliAbbr(cliAbbr: string): Promise<EdDSAUser[]> {
+  const { users } = await fetchEdDSAUserList(cliAbbr);
+  return users;
 }
 
 export function isUserEnabled(enabled: string): boolean {

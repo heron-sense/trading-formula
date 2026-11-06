@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -35,10 +36,17 @@ type ValidateResponse struct {
 }
 
 var (
-	authValidateURL     = "http://localhost:8080/validate"
-	authHTTPClient      = &http.Client{Timeout: 5 * time.Second}
-	authValidateEnabled = true
+	authValidateURL      = "http://localhost:8080/validate"
+	authHTTPClient       = &http.Client{Timeout: 5 * time.Second}
+	authValidateEnabled  = true
+	validateServiceError = "validate service error"
 )
+
+// logValidateFailure records an EdDSA-island /validate failure.
+// Callers must not put this detail into an HTTP response.
+func logValidateFailure(req ValidateRequest, format string, args ...any) {
+	log.Printf("eddsa-island validate error op=%s user_id=%s: %s", req.OperationCode, req.UserID, fmt.Sprintf(format, args...))
+}
 
 // ConfigureAuthValidate sets the remote validate endpoint.
 func ConfigureAuthValidate(validateURL string, enabled bool) {
@@ -52,32 +60,38 @@ func ConfigureAuthValidate(validateURL string, enabled bool) {
 func CallValidate(ctx context.Context, req ValidateRequest) (*ValidateResponse, error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
-		return nil, eris.Wrap(err, "marshal validate request")
+		logValidateFailure(req, "marshal request: %v", err)
+		return nil, eris.New(validateServiceError)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, authValidateURL, bytes.NewReader(payload))
 	if err != nil {
-		return nil, eris.Wrap(err, "new validate request")
+		logValidateFailure(req, "new request: %v", err)
+		return nil, eris.New(validateServiceError)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := authHTTPClient.Do(httpReq)
 	if err != nil {
-		return nil, eris.Wrap(err, "call validate")
+		logValidateFailure(req, "call: %v", err)
+		return nil, eris.New(validateServiceError)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, eris.Wrap(err, "read validate response")
+		logValidateFailure(req, "read response: %v", err)
+		return nil, eris.New(validateServiceError)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, eris.Errorf("validate HTTP %d: %s", resp.StatusCode, string(body))
+		logValidateFailure(req, "HTTP %d: %s", resp.StatusCode, string(body))
+		return nil, eris.New(validateServiceError)
 	}
 
 	var out ValidateResponse
 	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, eris.Wrap(err, "decode validate response")
+		logValidateFailure(req, "decode response: %v body=%s", err, string(body))
+		return nil, eris.New(validateServiceError)
 	}
 	return &out, nil
 }
@@ -160,7 +174,7 @@ func AuthValidateMiddleware() app.HandlerFunc {
 			OperationCode: op,
 		})
 		if err != nil {
-			writeAuthError(ctx, http.StatusBadGateway, fmt.Sprintf("validate service error: %v", err))
+			writeAuthError(ctx, http.StatusBadGateway, validateServiceError)
 			ctx.Abort()
 			return
 		}

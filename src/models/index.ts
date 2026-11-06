@@ -43,10 +43,8 @@ export interface Customer {
   summary?: string;
   /** 跟进记录（最新在前） */
   followUps?: CustFollowUp[];
-  /** 负责人用户 ID */
-  ownerId?: string;
-  /** 负责人姓名 */
-  ownerName?: string;
+  /** 负责人员工的角色 role_id，空表示未指派 */
+  assignee?: string;
 }
 
 export type CustomerStatus = 'active' | 'inactive' | 'pending';

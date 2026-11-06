@@ -16,8 +16,7 @@ type PotentialCust struct {
 	Tags             []string       `xorm:"json 'tags'" json:"tags,omitempty"`
 	Summary          string         `xorm:"varchar(100) 'summary'" json:"summary,omitempty"`
 	FollowUps        []CustFollowUp `xorm:"json 'follow_ups'" json:"followUps,omitempty"`
-	OwnerID          string         `xorm:"varchar(64) index 'owner_id'" json:"ownerId,omitempty"`
-	OwnerName        string         `xorm:"varchar(64) 'owner_name'" json:"ownerName,omitempty"`
+	Assignee         string         `xorm:"varchar(64) index 'assignee'" json:"assignee,omitempty"`
 }
 
 // CustFollowUp is one follow-up note on a customer.
@@ -45,6 +44,7 @@ type ListCustomersRequest struct {
 	LastContactFrom      string
 	LastContactTo        string
 	Status               string // catalog status name (matches legacy codes too)
+	RoleID               string // current employee's single role id; list keeps this assignee or an empty one
 	Page                 int
 	Limit                int
 }

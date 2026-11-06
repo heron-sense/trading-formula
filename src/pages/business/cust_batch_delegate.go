@@ -29,46 +29,38 @@ func normalizeCustIDs(raw []string) ([]string, error) {
 	return out, nil
 }
 
-func normalizeOwner(rawID, rawName string) (id, name string, err error) {
-	id = strings.TrimSpace(rawID)
-	name = strings.TrimSpace(rawName)
-	if id == "" {
-		return "", "", eris.New("ownerId is required")
+func normalizeAssignee(raw string) (string, error) {
+	assignee := strings.TrimSpace(raw)
+	if assignee == "" {
+		return "", eris.New("assignee is required")
 	}
-	if utf8.RuneCountInString(id) > 64 {
-		return "", "", eris.New("ownerId exceeds 64 characters")
+	if utf8.RuneCountInString(assignee) > 64 {
+		return "", eris.New("assignee exceeds 64 characters")
 	}
-	if name == "" {
-		return "", "", eris.New("ownerName is required")
-	}
-	if utf8.RuneCountInString(name) > 64 {
-		return "", "", eris.New("ownerName exceeds 64 characters")
-	}
-	return id, name, nil
+	return assignee, nil
 }
 
-// BatchAssignCustomers sets owner_id / owner_name for the given customer ids.
-func (d *Delegate) BatchAssignCustomers(ctx context.Context, rawIDs []string, rawOwnerID, rawOwnerName string) (updated int, ownerID, ownerName string, err error) {
+// BatchAssignCustomers writes the employee's role id into potential_cust.assignee.
+func (d *Delegate) BatchAssignCustomers(ctx context.Context, rawIDs []string, rawAssignee string) (updated int, assignee string, err error) {
 	ids, err := normalizeCustIDs(rawIDs)
 	if err != nil {
-		return 0, "", "", err
+		return 0, "", err
 	}
-	ownerID, ownerName, err = normalizeOwner(rawOwnerID, rawOwnerName)
+	assignee, err = normalizeAssignee(rawAssignee)
 	if err != nil {
-		return 0, "", "", err
+		return 0, "", err
 	}
 
 	session := essentials.NewSession(ctx)
 	defer session.Close()
 
-	n, err := session.In("id", ids).Cols("owner_id", "owner_name").Update(&PotentialCust{
-		OwnerID:   ownerID,
-		OwnerName: ownerName,
+	n, err := session.In("id", ids).Cols("assignee").Update(&PotentialCust{
+		Assignee: assignee,
 	})
 	if err != nil {
-		return 0, "", "", eris.Wrap(err, "batch assign potential_cust")
+		return 0, "", eris.Wrap(err, "batch assign potential_cust")
 	}
-	return int(n), ownerID, ownerName, nil
+	return int(n), assignee, nil
 }
 
 // BatchDeleteCustomers deletes customers by id.

@@ -125,8 +125,18 @@ func statusFilterCond(status string) builder.Cond {
 	return builder.In("status", values)
 }
 
+// assigneeCond keeps rows assigned to the employee's role, plus rows with no assignee.
+func assigneeCond(roleID string) builder.Cond {
+	roleID = strings.TrimSpace(roleID)
+	if roleID == "" {
+		return builder.Expr("(assignee = '' OR assignee IS NULL)")
+	}
+	return builder.Expr("(assignee = ? OR assignee = '' OR assignee IS NULL)", roleID)
+}
+
 func customerListCond(req ListCustomersRequest) builder.Cond {
-	cond := keywordCond(req.Keyword)
+	cond := assigneeCond(req.RoleID)
+	cond = cond.And(keywordCond(req.Keyword))
 	cond = cond.And(nameCond(req.Name))
 	if req.Tag != "" {
 		cond = cond.And(tagFilterCond(req.Tag))
@@ -169,15 +179,16 @@ func (d *Delegate) ListCustomers(ctx context.Context, req ListCustomersRequest) 
 		return nil, 0, 0, 0, 0, eris.Wrap(err, "find potential_cust")
 	}
 
-	active, err = countByStatus(ctx, "active")
+	visible := assigneeCond(req.RoleID)
+	active, err = countByStatus(ctx, "active", visible)
 	if err != nil {
 		return nil, 0, 0, 0, 0, err
 	}
-	pending, err = countByStatus(ctx, "pending")
+	pending, err = countByStatus(ctx, "pending", visible)
 	if err != nil {
 		return nil, 0, 0, 0, 0, err
 	}
-	inactive, err = countByStatus(ctx, "inactive")
+	inactive, err = countByStatus(ctx, "inactive", visible)
 	if err != nil {
 		return nil, 0, 0, 0, 0, err
 	}
@@ -185,10 +196,10 @@ func (d *Delegate) ListCustomers(ctx context.Context, req ListCustomersRequest) 
 	return items, total, active, pending, inactive, nil
 }
 
-func countByStatus(ctx context.Context, status string) (int64, error) {
+func countByStatus(ctx context.Context, status string, extra builder.Cond) (int64, error) {
 	session := essentials.NewSession(ctx)
 	defer session.Close()
-	n, err := session.Where("status = ?", status).Count(new(PotentialCust))
+	n, err := session.Where(extra.And(builder.Eq{"status": status})).Count(new(PotentialCust))
 	if err != nil {
 		return 0, eris.Wrap(err, fmt.Sprintf("count potential_cust status=%s", status))
 	}
@@ -274,7 +285,7 @@ func (d *Delegate) BatchUpsertCustomers(ctx context.Context, customers []Custome
 	toInsert := make([]Customer, 0, len(valid))
 	for _, c := range valid {
 		if _, ok := existSet[c.ID]; ok {
-			if _, uerr := session.Where("id = ?", c.ID).AllCols().Update(&c); uerr != nil {
+			if _, uerr := session.Where("id = ?", c.ID).Omit("assignee").AllCols().Update(&c); uerr != nil {
 				failed++
 				if len(samples) < maxSamples {
 					samples = append(samples, fmt.Sprintf("update id=%s: %v", c.ID, uerr))

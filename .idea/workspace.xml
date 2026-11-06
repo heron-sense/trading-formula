@@ -6,12 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="ed502e0c-eb28-4ac9-bdd8-f23ce7d223e1" name="Changes" comment="feat: add release/v-0.0.2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data/employeeApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/employeeApi.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/business/EmployeeListPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/EmployeeListPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/business/controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/controller.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/business/delegate.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/delegate.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/business/register.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/business/register.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

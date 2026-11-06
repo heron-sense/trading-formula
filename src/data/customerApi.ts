@@ -36,6 +36,7 @@ export async function fetchCustomers(params: {
   lastContactFrom?: string;
   lastContactTo?: string;
   status?: string;
+  roleId?: string;
 }): Promise<CustomerListResult> {
   const response = await api.get<CustomerListApiResponse>('/business/customers', {
     params: {
@@ -50,6 +51,7 @@ export async function fetchCustomers(params: {
       lastContactFrom: params.lastContactFrom || undefined,
       lastContactTo: params.lastContactTo || undefined,
       status: params.status || undefined,
+      roleId: params.roleId || undefined,
     },
   });
 
@@ -532,19 +534,21 @@ interface BatchAssignApiResponse {
   success: boolean;
   message?: string;
   updated?: number;
-  ownerId?: string;
-  ownerName?: string;
+  assignee?: string;
 }
 
-/** POST /api/business/customers/batch-assign — assign selected customers to an employee */
+/** POST /api/business/customers/batch-assign — store the employee's role id in assignee. */
 export async function batchAssignCustomers(
   custIds: string[],
-  owner: { ownerId: string; ownerName: string }
-): Promise<{ updated: number; ownerId: string; ownerName: string }> {
+  assignee: string
+): Promise<{ updated: number; assignee: string }> {
+  const roleId = assignee.trim();
+  if (!roleId) {
+    throw new Error('该员工还没有角色，无法指派');
+  }
   const response = await api.post<BatchAssignApiResponse>('/business/customers/batch-assign', {
     custIds,
-    ownerId: owner.ownerId,
-    ownerName: owner.ownerName,
+    assignee: roleId,
   });
   const body = response.data;
   if (!body?.success) {
@@ -552,8 +556,7 @@ export async function batchAssignCustomers(
   }
   return {
     updated: body.updated ?? 0,
-    ownerId: body.ownerId || owner.ownerId,
-    ownerName: body.ownerName || owner.ownerName,
+    assignee: body.assignee || roleId,
   };
 }
 

@@ -15,18 +15,15 @@ func TestNormalizeCustIDs(t *testing.T) {
 	}
 }
 
-func TestNormalizeOwner(t *testing.T) {
-	if _, _, err := normalizeOwner("", "张三"); err == nil {
-		t.Fatal("expected ownerId required")
+func TestNormalizeAssignee(t *testing.T) {
+	if _, err := normalizeAssignee("  "); err == nil {
+		t.Fatal("expected assignee required")
 	}
-	if _, _, err := normalizeOwner("u1", "  "); err == nil {
-		t.Fatal("expected ownerName required")
-	}
-	id, name, err := normalizeOwner(" u1 ", " 张三 ")
+	id, err := normalizeAssignee(" 04FxowNH1n2CAAux9y6Odh ")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id != "u1" || name != "张三" {
-		t.Fatalf("got %q %q", id, name)
+	if id != "04FxowNH1n2CAAux9y6Odh" {
+		t.Fatalf("got %q", id)
 	}
 }

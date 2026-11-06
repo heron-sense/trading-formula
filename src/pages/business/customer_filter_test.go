@@ -7,6 +7,32 @@ import (
 	"xorm.io/builder"
 )
 
+func TestCustomerListCond_Assignee(t *testing.T) {
+	empty := customerListCond(ListCustomersRequest{})
+	sql, args, err := builder.ToSQL(empty)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "assignee = ''") || !strings.Contains(sql, "assignee IS NULL") {
+		t.Fatalf("expected empty assignee filter, got %q", sql)
+	}
+	if len(args) != 0 {
+		t.Fatalf("empty role should not add args, got %#v", args)
+	}
+
+	scoped := customerListCond(ListCustomersRequest{RoleID: "04FxowNH1n2CAAux9y6Odh"})
+	sql, args, err = builder.ToSQL(scoped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "assignee = ?") || !strings.Contains(sql, "assignee = ''") {
+		t.Fatalf("expected role-or-empty assignee filter, got %q", sql)
+	}
+	if len(args) != 1 || args[0] != "04FxowNH1n2CAAux9y6Odh" {
+		t.Fatalf("unexpected args: %#v", args)
+	}
+}
+
 func TestCustomerListCond_Name(t *testing.T) {
 	cond := customerListCond(ListCustomersRequest{Name: "张三"})
 	sql, args, err := builder.ToSQL(cond)
